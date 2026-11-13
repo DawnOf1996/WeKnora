@@ -2,8 +2,8 @@
     <div class="aside_box" :class="{ 'aside_box--collapsed': uiStore.sidebarCollapsed, 'aside_box--resizing': uiStore.sidebarResizing }">
         <!-- 展开时：Logo + 搜索/折叠按钮同行 -->
         <div class="logo_row" v-if="!uiStore.sidebarCollapsed">
-            <div class="logo_box" @click="router.push('/platform/knowledge-bases')" style="cursor: pointer;">
-                <img class="logo" src="@/assets/img/weknora.png" alt="">
+            <div v-if="showBrandLogo" class="logo_box" @click="router.push('/platform/knowledge-bases')" style="cursor: pointer;">
+                <img class="logo" :src="brandLogo" alt="">
                 <sup v-if="isLiteEdition" class="lite-badge">Lite</sup>
             </div>
             <div class="logo_actions">
@@ -278,6 +278,8 @@ import { useSessionActivityStore } from '@/stores/sessionActivity';
 import { useAuthStore } from '@/stores/auth';
 import { useDeploymentCapabilitiesStore } from '@/stores/deploymentCapabilities';
 import { TOOLBOX_ITEMS, canAccessToolboxSection } from '@/config/toolbox';
+import { brandLogo as resolveBrandLogo, shouldShowLogo } from '@/config/branding';
+import weknoraLogo from '@/assets/img/weknora.png';
 import BrowserIcon from '@/components/icons/BrowserIcon.vue';
 import { useBrowserConnectionStore } from '@/stores/browserConnection';
 import { useOrganizationStore } from '@/stores/organization';
@@ -396,6 +398,9 @@ type MenuItem = { title: string; icon: string; path: string; childrenPath?: stri
 const { menuArr, visibleMenuArr } = storeToRefs(usemenuStore);
 let activeSubmenu = ref<string>('');
 const isLiteEdition = ref(false);
+// 品牌 Logo：显隐与资源均由 config/branding.ts 决定，上游升级时此处不需改动。
+const showBrandLogo = shouldShowLogo();
+const brandLogo = resolveBrandLogo(weknoraLogo);
 
 // 批量管理状态
 const batchMode = ref(false)
