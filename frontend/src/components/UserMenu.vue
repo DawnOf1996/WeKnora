@@ -125,8 +125,8 @@
           <t-icon name="server" class="menu-icon" />
           <span>{{ $t('settings.navGroups.systemAdministration') }}</span>
         </div>
-        <div class="menu-divider"></div>
-        <div class="menu-item" @click="openDocs">
+        <div v-if="!isHiddenUserMenuItem('docs') || !isHiddenUserMenuItem('github')" class="menu-divider"></div>
+        <div v-if="!isHiddenUserMenuItem('docs')" class="menu-item" @click="openDocs">
           <t-icon name="help-circle" class="menu-icon" />
           <span class="menu-text-with-icon">
             <span>{{ $t('general.helpAndDocs') }}</span>
@@ -136,7 +136,7 @@
             </svg>
           </span>
         </div>
-        <div class="menu-item" :title="$t('common.githubStarTip')" @click="openGithub">
+        <div v-if="!isHiddenUserMenuItem('github')" class="menu-item" :title="$t('common.githubStarTip')" @click="openGithub">
           <t-icon name="logo-github" class="menu-icon" />
           <span class="menu-text-with-icon">
             <span>{{ $t('common.github') }}</span>
@@ -234,6 +234,7 @@ import { useRoleLabel, useHomeTenant } from '@/composables/useRoleLabel'
 import { getRootZoom, rectToCssPx, cssViewportSize } from '@/utils/zoom'
 import { openNewUserGuide } from '@/config/contextualGuides'
 import { SETTINGS_MANAGEMENT_SHORTCUT_MIN_ROLE } from '@/config/settingsAccess'
+import { BRAND, isHiddenUserMenuItem } from '@/config/branding'
 import { docsUrl } from '@/utils/docsUrl'
 const { t } = useI18n()
 
@@ -514,13 +515,13 @@ const reopenGuide = () => {
 
 const openDocs = () => {
   menuVisible.value = false
-  window.open(docsUrl('home'), '_blank')
+  window.open(BRAND.docsUrl || docsUrl('home'), '_blank')
 }
 
 // 打开 GitHub
 const openGithub = () => {
   menuVisible.value = false
-  window.open('https://github.com/Tencent/WeKnora', '_blank')
+  window.open(BRAND.githubUrl || 'https://github.com/Tencent/WeKnora', '_blank')
 }
 
 // 注销
