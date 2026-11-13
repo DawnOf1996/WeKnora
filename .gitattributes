@@ -8,6 +8,19 @@ cli/acceptance/testdata/**/*.json text eol=lf
 docs/swagger.json text eol=lf linguist-generated=true
 docs/swagger.yaml text eol=lf linguist-generated=true
 
+# Force LF on frontend sources for the same reason: the frontend test suite
+# contains source-text assertions that compare against the checked-out file
+# contents, so a Windows checkout with core.autocrlf=true turns LF into CRLF
+# and those assertions fail even though nothing was changed.
+*.vue text eol=lf
+*.ts text eol=lf
+*.mts text eol=lf
+*.mjs text eol=lf
+*.js text eol=lf
+*.html text eol=lf
+*.css text eol=lf
+*.less text eol=lf
+
 # Trellis: append-only developer journals should merge cleanly across
 # parallel sessions/worktrees — each session only appends a new block, so
 # there is nothing to actually conflict on.
