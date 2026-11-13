@@ -35,14 +35,38 @@ function integrationMenu(visibleKeys: string[]): string[] {
 
 const integrationKeys = INTEGRATION_PREVIEW_ITEMS.map((item) => integrationSectionKey(item.key))
 
-test('settings sidebar includes every registered integration, including CLI, in navigation order', () => {
+// The branding hide list is applied when navItems is built, before navGroups
+// groups it. These two cases cover the grouping mechanism itself: given a set
+// of already-visible items, the integrations group keeps them in nav order.
+test('settings sidebar groups every visible integration in navigation order', () => {
   assert.deepEqual(integrationMenu(['general', ...integrationKeys]), integrationKeys)
 })
 
-test('settings sidebar preserves visibility filtering without hiding CLI', () => {
+test('settings sidebar preserves visibility filtering for integrations', () => {
   const visible = integrationKeys.filter((key) => key !== 'integration-api' && key !== 'integration-im')
   assert.deepEqual(integrationMenu(visible), visible)
   assert.deepEqual(integrationMenu(['general']), [])
+})
+
+// Guard against the silent failure mode: an upstream refactor of navItems
+// could drop the branding filter, which would make every hidden entry reappear
+// while type-check, build and the tests above still pass.
+test('settings navigation applies the branding hide list when building navItems', () => {
+  const navItemsStatement = ast.statements.find((statement) =>
+    ts.isVariableStatement(statement) && statement.declarationList.declarations.some(
+      (declaration) => ts.isIdentifier(declaration.name) && declaration.name.text === 'navItems',
+    ),
+  )
+  assert.ok(navItemsStatement, 'Settings must define navItems')
+  const navItemsText = navItemsStatement.getText(ast)
+  assert.ok(
+    navItemsText.includes('isHiddenIntegrationTab'),
+    'navItems must filter integration tabs through config/branding.ts',
+  )
+  assert.ok(
+    navItemsText.includes('isHiddenSettingsSection'),
+    'navItems must filter settings sections through config/branding.ts',
+  )
 })
 
 // Keep navigation tests tied to the real close handler, without mounting
