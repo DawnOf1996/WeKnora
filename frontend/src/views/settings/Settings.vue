@@ -256,6 +256,7 @@ import {
   SYSTEM_ADMIN_SETTINGS_SECTIONS,
 } from '@/config/settingsAccess'
 import { SETTINGS_SECTION_CAPABILITY, skillSettingsSupported } from '@/config/deploymentCapabilities'
+import { isHiddenIntegrationTab, isHiddenSettingsSection } from '@/config/branding'
 import { isToolboxSection, toolboxLocation } from '@/config/toolbox'
 import { hostSkillsOnly } from '@/utils/skillTarget'
 import {
@@ -365,12 +366,14 @@ const navItems = computed(() => {
   // 一律走 SETTINGS_SECTION_MIN_ROLE 表，避免 ad-hoc isAdmin/isOwner 散落在多处。
   // 服务端在每条路由上仍以 g.Viewer/Admin/Owner 为准，这里只决定 UI 是
   // 否露入口；改动入口规则请同步更新 settingsAccess.ts 和对应后端路由。
-  const integrationItems: NavItem[] = INTEGRATION_PREVIEW_ITEMS.map((item) => ({
-    key: integrationSectionKey(item.key),
-    icon: item.icon.type === 'icon' ? item.icon.name : 'integration',
-    emoji: item.icon.type === 'emoji' ? item.icon.value : undefined,
-    label: t(`integrations.tabs.${item.key}`),
-  }))
+  const integrationItems: NavItem[] = INTEGRATION_PREVIEW_ITEMS
+    .filter((item) => !isHiddenIntegrationTab(item.key))
+    .map((item) => ({
+      key: integrationSectionKey(item.key),
+      icon: item.icon.type === 'icon' ? item.icon.name : 'integration',
+      emoji: item.icon.type === 'emoji' ? item.icon.value : undefined,
+      label: t(`integrations.tabs.${item.key}`),
+    }))
   const all: NavItem[] = [
     { key: 'general', icon: 'setting', label: t('general.title') },
     { key: 'ollama', icon: 'server', label: 'Ollama' },
@@ -405,7 +408,9 @@ const navItems = computed(() => {
   if (!authStore.currentTenantRole && !authStore.canAccessAllTenants) {
     return [] as NavItem[]
   }
-  return all.filter((it) => canSeeSection(it.key) && isSectionSupported(it.key))
+  return all
+    .filter((it) => canSeeSection(it.key) && isSectionSupported(it.key))
+    .filter((it) => !isHiddenSettingsSection(it.key))
 })
 
 const navGroups = computed<NavGroup[]>(() => {
