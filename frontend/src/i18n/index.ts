@@ -3,6 +3,8 @@ import { createI18n } from 'vue-i18n'
 import { isEmbedPage } from '../utils/authRefresh.ts'
 import { pluralRules } from './pluralizationRules.ts'
 import { BUILT_IN_DEFAULT, resolveDefaultLocale } from './resolveDefaultLocale.ts'
+import { buildBrandMessages } from './brandMessages.ts'
+import { BRAND, brandName } from '@/config/branding'
 
 export const SUPPORTED_MAIN_LOCALES = [
   'zh-CN',
@@ -24,6 +26,42 @@ const LOCALE_LOADERS: Record<SupportedMainLocale, () => Promise<LocaleModule>> =
   'ru-RU': () => import('./locales/ru-RU.ts'),
   'ko-KR': () => import('./locales/ko-KR.ts'),
   'ja-JP': () => import('./locales/ja-JP.ts'),
+}
+
+/**
+ * 品牌覆盖层合并：按点分路径深合并，brandMessages 的条目覆盖上游 locale。
+ *
+ * 上游 locales/*.ts 保持原样 —— 上游每次发版都会改这些文件，在里面改字符串
+ * 等于制造冲突点。本文件（独立新增）与 brandMessages.ts（独立新增）都不与
+ * 上游重叠，升级时零冲突。
+ */
+function mergeBrandMessages<T extends Record<string, unknown>>(
+  base: T,
+  patch: Record<string, string>,
+): T {
+  const out: Record<string, unknown> = { ...base }
+  for (const [path, value] of Object.entries(patch)) {
+    const segments = path.split('.')
+    let cursor = out
+    for (let i = 0; i < segments.length - 1; i += 1) {
+      const seg = segments[i]!
+      const next = cursor[seg]
+      if (typeof next !== 'object' || next === null || Array.isArray(next)) {
+        cursor[seg] = {}
+      }
+      cursor = cursor[seg] as Record<string, unknown>
+    }
+    const leaf = segments[segments.length - 1]!
+    cursor[leaf] = value
+  }
+  return out as T
+}
+
+function withBrand<T extends Record<string, unknown>>(base: T, locale: string): T {
+  return mergeBrandMessages(
+    base,
+    buildBrandMessages(locale, brandName(locale), BRAND.assistantName),
+  )
 }
 
 export function normalizeMainLocale(raw?: string | null): SupportedMainLocale {
@@ -148,7 +186,7 @@ export async function loadLocaleMessages(rawLocale: string): Promise<SupportedMa
     .then((mod) => {
       const embedSeed = embedSeedMessages.get(target)
       const bundle = embedSeed ? mergePlainRecords(embedSeed, mod.default) : mod.default
-      i18n.global.setLocaleMessage(target, bundle as never)
+      i18n.global.setLocaleMessage(target, withBrand(bundle, target) as never)
       loadedLocales.add(target)
       return target
     })
@@ -178,9 +216,9 @@ export function seedEmbedLocaleMessages(
     embedSeedMessages.set(locale, seed)
     if (loadedLocales.has(locale)) {
       const current = i18n.global.getLocaleMessage(locale) as unknown as Record<string, unknown>
-      i18n.global.setLocaleMessage(locale, mergePlainRecords(seed, current) as never)
+      i18n.global.setLocaleMessage(locale, withBrand(mergePlainRecords(seed, current), locale) as never)
     } else {
-      i18n.global.setLocaleMessage(locale, seed as never)
+      i18n.global.setLocaleMessage(locale, withBrand(seed, locale) as never)
     }
   }
   return syncEmbedSharedLocale(activeLocale)
