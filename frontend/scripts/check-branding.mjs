@@ -81,25 +81,32 @@ for (const file of ['src/components/menu.vue', 'src/views/auth/Login.vue']) {
   }
 }
 
-// ── 5：覆盖层 key 是否仍存在于上游 locale（防上游改名）─────────────────
+// ── 5：文案覆盖层是否就位 ────────────────────────────────────────────
+// 详细的逐条对账（上游新增 / 覆盖失效）由 `npm run branding:merge` 负责，
+// 这里只做粗粒度存在性检查，保证 CI 门禁不依赖 tsx。
 const brandMessagesSrc = read('src/i18n/brandMessages.ts')
-const zhSrc = read('src/i18n/locales/zh-CN.ts')
+const i18nIndexSrc = read('src/i18n/index.ts')
 
 if (brandMessagesSrc === null) {
-  console.log('ℹ 尚未创建 i18n 文案覆盖层 brandMessages.ts —— 跳过文案校验')
-} else if (zhSrc === null) {
-  fail('✗ 找不到 src/i18n/locales/zh-CN.ts —— 上游可能重命名了 locale 文件')
+  fail('✗ 找不到 src/i18n/brandMessages.ts —— 文案覆盖层丢失，品牌字样会重新露出')
+} else if (i18nIndexSrc === null) {
+  fail('✗ 找不到 src/i18n/index.ts')
 } else {
-  const zhBlock = brandMessagesSrc.match(/'zh-CN'\s*:\s*\{([\s\S]*?)\n {2}\}/)?.[1] ?? ''
-  const paths = [...zhBlock.matchAll(/'([^']+)'\s*:/g)].map((m) => m[1])
-  for (const path of paths) {
-    const leaf = path.split('.').pop()
-    const leafPattern = new RegExp(`['"\`]?${leaf}['"\`]?\\s*:`)
-    if (!leafPattern.test(zhSrc)) {
-      fail(`⚠ 覆盖层 key "${path}" 在上游 zh-CN.ts 中未找到同名键 —— 上游可能已改名，请复核该文案`)
-    }
+  if (!brandMessagesSrc.includes('BRAND_TEXT_KEYS')) {
+    fail('✗ brandMessages.ts 中缺少 BRAND_TEXT_KEYS —— 覆盖层结构被改动')
   }
-  console.log(`ℹ 文案覆盖层校验完成（zh-CN ${paths.length} 条）`)
+  if (!i18nIndexSrc.includes("from './brandMessages.ts'")) {
+    fail('✗ i18n/index.ts 未引入 brandMessages.ts —— 覆盖层未生效，文案覆盖全部失效')
+  }
+  if (!i18nIndexSrc.includes('withBrand(')) {
+    fail('✗ i18n/index.ts 中找不到 withBrand() 调用 —— 覆盖层未接入 messages 构建')
+  }
+  const keyCount = (brandMessagesSrc.match(/BRAND_TEXT_KEYS\s*=\s*\[([\s\S]*?)\]/) || [, ''])[1]
+    .split(',').filter((s) => s.trim()).length
+  console.log(`ℹ 文案覆盖层：${keyCount} 个 key × ${Object.keys(
+    (brandMessagesSrc.match(/^\s{2}'[a-z]{2}-[A-Z]{2}':\s*\{/gm) || []),
+  ).length} 种语言`)
+  console.log('ℹ 逐条对账请运行: npm run branding:merge')
 }
 
 // ── 汇总 ──────────────────────────────────────────────────────────────
