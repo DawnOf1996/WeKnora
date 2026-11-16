@@ -23,6 +23,10 @@ export const HIDDEN_USER_MENU_ITEMS = ['docs', 'github'] as const
 export interface BrandConfig {
   /** 产品显示名，用于登录页标题、欢迎语等 */
   name: string
+  /** 产品内置 AI 助手的显示名 */
+  assistantName: string
+  /** 各语言的产品显示名；缺省回落到 name */
+  localizedNames: Record<string, string>
   /** 是否显示 Logo 区域。false = 整个 logo_box 不渲染 */
   showLogo: boolean
   /** 自有 Logo 路径（放在 frontend/public/brand/ 下）。为空则回退到上游 Logo */
@@ -39,12 +43,26 @@ export interface BrandConfig {
 
 export const BRAND: BrandConfig = {
   name: '知识库助手',
+  assistantName: '智能助手',
+  localizedNames: {
+    'zh-CN': '知识库助手',
+    'zh-TW': '知識庫助手',
+    'en-US': 'Knowledge Assistant',
+    'ru-RU': 'Ассистент знаний',
+    'ko-KR': '지식 어시스턴트',
+    'ja-JP': 'ナレッジアシスタント',
+  },
   showLogo: false,
   logo: '',
   homepage: '',
   docsUrl: '',
   websiteUrl: '',
   githubUrl: '',
+}
+
+/** 取指定语言的产品名；未登记则回落到 BRAND.name */
+export function brandName(locale: string): string {
+  return BRAND.localizedNames[locale] || BRAND.name
 }
 
 export function isHiddenSettingsSection(key: string): boolean {
