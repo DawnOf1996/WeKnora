@@ -4,7 +4,7 @@ import { existsSync } from 'node:fs'
 import { execSync } from 'node:child_process'
 import { copyPdfJsWasm } from './scripts/copy-pdfjs-wasm.mjs'
 import { createRequire } from 'node:module'
-import { defineConfig, type Plugin } from 'vite'
+import { defineConfig, loadEnv, type Plugin } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import vueJsx from '@vitejs/plugin-vue-jsx'
 
@@ -48,7 +48,13 @@ function embedHtmlDevFallback(): Plugin {
     },
   }
 }
+// 后端代理目标。优先读 frontend/.env.local（loadEnv 会把系统环境变量里的同名
+// VITE_ 变量覆盖到文件值之上，所以环境变量仍然优先），再退回系统环境变量。
+// 不用 loadEnv 的话，.env.local 在配置文件求值时尚未加载，dev server 会静默
+// 回落到 localhost:8080。
+const fileEnv = loadEnv(process.env.NODE_ENV === 'production' ? 'production' : 'development', __dirname, 'VITE_')
 const DEV_PROXY_TARGET =
+  fileEnv.VITE_DEV_PROXY_TARGET ||
   process.env.VITE_DEV_PROXY_TARGET ||
   process.env.FRONTEND_BACKEND_URL ||
   'http://localhost:8080'

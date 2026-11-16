@@ -294,6 +294,49 @@ const messages = {
 `,
     ),
   },
+
+  // ── dev 代理目标读 .env.local ────────────────────────────────────────
+  // 上游的 vite.config.ts 在模块求值时直接读 process.env，而 Vite 加载
+  // .env / .env.local 发生在配置文件求值之后 —— 只写 .env.local 会被静默
+  // 忽略，dev server 悄悄回落到 localhost:8080。这里显式用 loadEnv 读文件。
+  {
+    id: 'vite-proxy-env',
+    file: 'vite.config.ts',
+    detect: (s) => s.includes('loadEnv(') && s.includes('fileEnv.VITE_DEV_PROXY_TARGET'),
+    apply: (s) => {
+      const patchedBlock = `// 后端代理目标。优先读 frontend/.env.local（loadEnv 会把系统环境变量里的同名
+// VITE_ 变量覆盖到文件值之上，所以环境变量仍然优先），再退回系统环境变量。
+// 不用 loadEnv 的话，.env.local 在配置文件求值时尚未加载，dev server 会静默
+// 回落到 localhost:8080。
+const fileEnv = loadEnv(process.env.NODE_ENV === 'production' ? 'production' : 'development', __dirname, 'VITE_')
+const DEV_PROXY_TARGET =
+  fileEnv.VITE_DEV_PROXY_TARGET ||
+  process.env.VITE_DEV_PROXY_TARGET ||
+  process.env.FRONTEND_BACKEND_URL ||
+  'http://localhost:8080'`
+
+      // 2) 先匹配代理目标代码块。匹配不到 = 上游改了这段结构，原样返回，
+      //    让执行器报「锚点丢失」并退出码 1 —— 绝不能只改一半。
+      const upstreamBlock = /const DEV_PROXY_TARGET =\s*\n\s*process\.env\.VITE_DEV_PROXY_TARGET \|\|\s*\n\s*process\.env\.FRONTEND_BACKEND_URL \|\|\s*\n\s*'http:\/\/localhost:8080'/
+      if (!upstreamBlock.test(s)) return s
+      let out = s.replace(upstreamBlock, patchedBlock)
+
+      // 1) import 里补上 loadEnv（固定插在 defineConfig 之后，保证整改结果与
+      //    已提交版本逐字节一致，便于用 git diff 复核）
+      if (!/import \{[^}]*\bloadEnv\b[^}]*\} from 'vite'/.test(out)) {
+        out = out.replace(/import \{([^}]*)\} from 'vite'/, (m, inner) => {
+          const names = inner.split(',').map((x) => x.trim()).filter(Boolean)
+          if (!names.includes('loadEnv')) {
+            const at = names.indexOf('defineConfig')
+            names.splice(at >= 0 ? at + 1 : 0, 0, 'loadEnv')
+          }
+          return `import { ${names.join(', ')} } from 'vite'`
+        })
+      }
+
+      return out
+    },
+  },
 ]
 
 // ── 执行 ──────────────────────────────────────────────────────────────
