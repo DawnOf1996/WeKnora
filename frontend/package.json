@@ -12,6 +12,9 @@
     "type-check": "vue-tsc --build",
     "test": "tsx --test",
     "check-branding": "node scripts/check-branding.mjs",
+    "branding:apply": "node scripts/apply-branding.mjs",
+    "branding:merge": "tsx scripts/merge-brand-messages.ts",
+    "branding:list": "node scripts/list-brand-text.mjs",
     "check-i18n": "tsx --test src/i18n/localeKeyAudit.test.ts",
     "scan-i18n-gaps": "tsx src/i18n/localeGapScan.ts",
     "regenerate-i18n-locales": "tsx src/i18n/regeneratePrunedLocales.ts"
