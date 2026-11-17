@@ -6,11 +6,13 @@
 - [API 参考](../website-docs/04-api/01-api-overview.md)
 - [开发指南](../website-docs/06-development/01-dev-guide.md)
 - [迁移对应表与剩余依赖](../website-docs/MIGRATION.md)
+- [私有封装打包手册](PRIVATE-PACKAGING.md)
 
 本目录仅保留以下工程资源及本入口说明：
 
 - `docs.go`、`swagger.json`、`swagger.yaml` 与契约/同步测试：参与后端编译和测试，`swagger.json` 与 `swagger.yaml` 由 `make docs` 生成，`docs.go` 通过 `//go:embed swagger.json` 加载。
 - `LITE.md`：Lite 发布包复制为离线 README。
+- `PRIVATE-PACKAGING.md`：私有封装版本（自建 tag + 品牌定制层）的服务器端打包手册。
 - `images/`、`assets/`：README、Helm 等仍使用的图片资源。
 - `poc/docker-sandbox/`：独立 Go 实验模块，保留源码和运行说明，不作为当前产品指南。
 
