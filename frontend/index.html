@@ -15,32 +15,12 @@
     <link rel="apple-touch-icon" sizes="120x120" type="image/png" href="./public/favicon.ico"/>
 </head>
 <body>
-<script>
-(function(){
-  var t=localStorage.getItem('WeKnora_theme')||'light';
-  if(t==='system')t=window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';
-  document.documentElement.setAttribute('theme-mode',t);
-  /* 与 theme.css 中 --td-bg-color-page 一致，避免样式加载后整页背景从 #fff 跳到 #eee 触发重绘闪动 */
-  var bg=t==='dark'?'#181818':'#eee';
-  document.documentElement.style.background=bg;
-  document.documentElement.style.minHeight='100%';
-  document.documentElement.style.colorScheme=t==='dark'?'dark':'light';
-  document.body.style.background=bg;
-  document.body.style.minHeight='100%';
-  try{
-    var w=window.runtime;
-    if(w){
-      if(t==='dark'){
-        if(w.WindowSetDarkTheme)w.WindowSetDarkTheme();
-        if(w.WindowSetBackgroundColour)w.WindowSetBackgroundColour(24,24,24,255);
-      }else{
-        if(w.WindowSetLightTheme)w.WindowSetLightTheme();
-        if(w.WindowSetBackgroundColour)w.WindowSetBackgroundColour(238,238,238,255);
-      }
-    }
-  }catch(_){}
-})();
-</script>
+<!--
+  首屏主题引导：设置 <html theme-mode> 与皮肤属性，并把底色对齐到当前主题，
+  避免样式表加载前整窗白闪。实现见 public/theme-boot.js（自包含，勿在此内联）。
+  注意该脚本会同时读取分命名空间的偏好 WeKnora_${userId}_theme 与旧 key WeKnora_theme。
+-->
+<script src="%BASE_URL%theme-boot.js"></script>
 <script>
 (function(){
   try {
@@ -64,15 +44,7 @@
 -->
 <script src="%BASE_URL%tdesign-icons/0.4.1/fonts/index.js"></script>
 <div id="app"></div>
-<script>
-(function(){
-  var t=localStorage.getItem('WeKnora_theme')||'light';
-  if(t==='system')t=window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';
-  var bg=t==='dark'?'#181818':'#eee';
-  var el=document.getElementById('app');
-  if(el){ el.style.background=bg; el.style.minHeight='100%'; }
-})();
-</script>
+<!-- 主题底色统一由 theme-boot.js 引导（首屏 + DOMContentLoaded 各一次），此处不再重复内联实现 -->
 <script type="module" src="/src/main.ts"></script>
 </body>
 </html>
