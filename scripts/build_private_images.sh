@@ -24,7 +24,7 @@ ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 cd "${ROOT_DIR}"
 
 # ── 默认参数 ──
-GIT_TAG="v0.9.0-private"
+GIT_TAG="v0.9.0-private.4"
 IMAGE_REPO="wechatopenai"
 BUILD_FRONTEND=true
 BUILD_APP=false
@@ -53,7 +53,7 @@ show_help() {
 用法: scripts/build_private_images.sh [选项]
 
 选项:
-  -t, --tag <tag>        要构建的 git tag（默认 v0.9.0-private）
+  -t, --tag <tag>        要构建的 git tag（默认 v0.9.0-private.4，发新版本时记得改）
   -f, --frontend         仅构建前端镜像（默认行为）
   -a, --app              构建 app 镜像
   -d, --docreader        构建 docreader 镜像

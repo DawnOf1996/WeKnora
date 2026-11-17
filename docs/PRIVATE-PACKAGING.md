@@ -698,14 +698,29 @@ rm -rf "$STAGE"
 | --- | --- |
 | 拉取 tag | `git fetch origin --force --tags`（GitHub 直连偶发 `RPC 失败 / HTTP2 framing layer`，重试即可） |
 | 检出 | HEAD = `a8e0d8db` = `origin/custom/brand` HEAD |
-| 镜像 | `wechatopenai/weknora-ui:v0.9.0-private.2`，89.3 MB，ID `fb3babf01a26` |
+| 镜像 | `wechatopenai/weknora-ui:v0.9.0-private.2`，89.3 MB |
 | 主题校验 | 产物 CSS 中 `#ffc02d`（朋克黄）存在，`#ff2d78`（霓虹粉）已为 0 |
 | 资源指纹 | `index-DQ0bSiTa.js`（`.1` 是 `index-Ctrc7j2S.js`），确认产物确实来自新源码 |
 | commit 注入 | 产物内含 `a8e0d8d` |
 | 首页 / 品牌 | HTTP 200，`<title>知识库助手</title>` |
 | 品牌漂移检测 | 通过 |
 | embed/MCP 冒烟 | 通过 |
-| 站点图标 | `frontend/public/favicon.ico` 原位替换为书本图标（5558 → 1119 bytes，16+32），前端源码零改动 |
+| 站点图标 | 仍是上游字标（5558 bytes），与该 tag 的源码一致 |
+
+### B.2.1 `v0.9.0-private.4`
+
+相对 `.2` 多三个提交：打包手册与一键构建脚本、站点图标替换、手册与脚本默认 tag 同步。
+
+| 项目 | 结果 |
+| --- | --- |
+| 镜像 | `wechatopenai/weknora-ui:v0.9.0-private.4`，89.3 MB |
+| 站点图标 | 1119 bytes 书本图标（16+32），与源码 tag 的 `favicon.ico` 逐字节一致（sha256 `9bbb050c…`） |
+| 前端源码 | 零改动，`git diff --stat frontend/` 只有一个 `favicon.ico` |
+| tag 管理 | 新开 tag 而非移动 `.2`：`git update-ref` 精确还原 `.2` 的 tag 对象，远端 `.2` 无需 force push |
+
+> **镜像 tag 与源码 tag 要一一对应。** 改了 `.2` 的源码却把镜像仍打成 `.2`，
+> 部署时会出现「镜像比 tag 新」的情况，后续排查会很痛苦。
+> 加了新内容就新开一个 tag + 同名镜像，别覆盖旧 tag。
 
 ### B.3 该机特有的坑（已在正文与故障排查表中标注）
 
