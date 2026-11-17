@@ -3,13 +3,26 @@ import test from 'node:test'
 
 import { BRAND_TEXT_EXCLUDED, BRAND_TEXT_KEYS, BRAND_TEXT_TEMPLATES, buildBrandMessages } from './brandMessages.ts'
 
-test('every covered key exists in all six locale templates', () => {
+test('covered keys exist in the locale templates that need them', () => {
   const locales = Object.keys(BRAND_TEXT_TEMPLATES)
   assert.equal(locales.length, 6)
+  // 覆盖层按语言可选：每个语言只需覆盖「该语言上游原文确实含品牌词」的那几条，
+  // 但所有语言模板的并集必须等于登记清单 BRAND_TEXT_KEYS。
+  const union = new Set<string>()
   for (const locale of locales) {
-    const keys = Object.keys(BRAND_TEXT_TEMPLATES[locale]).sort()
-    assert.deepEqual(keys, [...BRAND_TEXT_KEYS].sort(), `${locale} 的 key 集合应与 BRAND_TEXT_KEYS 一致`)
+    for (const key of Object.keys(BRAND_TEXT_TEMPLATES[locale])) {
+      union.add(key)
+      assert.ok(
+        (BRAND_TEXT_KEYS as readonly string[]).includes(key),
+        `${locale}/${key} 写进了模板但没登记进 BRAND_TEXT_KEYS`,
+      )
+    }
   }
+  assert.deepEqual(
+    [...union].sort(),
+    [...BRAND_TEXT_KEYS].sort(),
+    '各语言模板的并集应与 BRAND_TEXT_KEYS 完全一致',
+  )
 })
 
 /**
@@ -87,6 +100,47 @@ test('system info page carries no upstream service names', () => {
       `${locale} 的 DocReader 说明应保留服务名，与标签保持一致`,
     )
   }
+})
+
+test('sandbox settings copy carries no upstream product name', () => {
+  // 沙箱配置抽屉里所有带品牌词的说明与标题。用户实际能看到的是「连接」步的
+  // DNS 说明（cubeDnsServersHelp）与「模板」步的模板卡片标题。
+  const keys = [
+    'settings.sandbox.cubeDnsServersHelp',
+    'settings.sandbox.weknoraStandardTemplate',
+    'settings.sandbox.weknoraDesktopTemplate',
+    'settings.sandbox.weknoraDockerImage',
+    'settings.sandbox.weknoraTemplateTitle',
+    'settings.sandbox.weknoraTemplateOverview',
+    'settings.sandbox.weknoraTemplateDescription',
+    'settings.sandbox.standardTemplateProvisioning',
+    'settings.sandbox.desktopTemplateProvisioning',
+    'settings.sandbox.replaceStandardTemplateConfirm',
+    'settings.sandbox.replaceDesktopTemplateConfirm',
+    'settings.sandbox.templateUntaggedHint',
+    'settings.sandbox.dockerHostRisk',
+    'settings.sandbox.dockerTlsCertPathHelp',
+    'settings.sandbox.dockerIdleTtlHelp',
+  ]
+  for (const locale of Object.keys(BRAND_TEXT_TEMPLATES)) {
+    const messages = buildBrandMessages(locale, 'X', 'Y')
+    for (const key of keys) {
+      assert.ok(messages[key], `${locale}/${key} 应有覆盖文案`)
+      assert.ok(
+        !/weknora/i.test(messages[key]),
+        `${locale}/${key} 仍含上游专名：${messages[key]}`,
+      )
+    }
+  }
+})
+
+test('the DNS hint keeps the operational details while dropping the brand', () => {
+  const messages = buildBrandMessages('zh-CN', '知识库助手', '智能助手')
+  const hint = messages['settings.sandbox.cubeDnsServersHelp']
+  assert.ok(hint.includes('nameserver'), 'DNS 参数名不能丢')
+  assert.ok(hint.includes('119.29.29.29'), '集群默认 DNS 示例不能丢')
+  assert.ok(hint.includes('10/8'), '私网网段提示不能丢')
+  assert.ok(hint.includes('标准模板'), '模板应改用中性称呼')
 })
 
 test('exclusion list uses known reasons only', () => {
