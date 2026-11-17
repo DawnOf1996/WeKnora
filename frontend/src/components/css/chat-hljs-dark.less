@@ -1,12 +1,39 @@
 // Dark-theme highlight token colors only. Chat Markdown layout/chrome styles
 // belong to chat-markdown.less.
+//
+// 为什么这里必须用 !important
+// ---------------------------
+// 浅色的 token 色定义在 scoped 组件样式里（chat-hljs.less 的 mixin，经
+// .chat-markdown-typography() 混入各组件的 <style scoped>），编译后特异性会
+// 随组件的嵌套深度增长：
+//
+//   botmsg.vue            .markdown-content[data-v-x] .chat-code-block__pre .hljs           → (0,4,0)
+//   AgentStreamDisplay   .answer-event .answer-content.markdown-content[data-v-x]
+//                         .chat-code-block__pre .hljs                                       → (0,6,0)
+//
+// 而本文件是全局样式（非 scoped），特异性固定：
+//
+//   html[theme-mode=dark] .markdown-content .chat-code-block__pre .hljs                    → (0,4,1)
+//
+// (0,4,1) < (0,6,0) —— AgentStreamDisplay 的对话区（知识库对话渲染路径）
+// 深色 token 色被浅色压过去，代码块文字在深色主题下依然是黑色。
+//
+// 因此本层作为「深色模式下的权威色板」使用 !important：
+//   - 只在 theme-mode=dark 时生效，浅色主题完全不受影响；
+//   - 上游无论再套几层包装、怎么改类名，深色都不会再被浅色压过；
+//   - 色值与 document-preview.vue 的全局深色规则一致（同一套 github-dark 色板），
+//     两者不会互相打架；
+//   - theme.css 这个全局覆盖层本身已有 9 处 !important 先例，风格一致。
+//
+// 若上游将来把深色 token 色也收进 scoped 样式并自带 !important，本文件可退回
+// 纯特异性方案，届时需重新核算两边的特异性。
 html[theme-mode='dark'] {
   .markdown-content .chat-code-block__pre,
   .answer-content .chat-code-block__pre,
   .ai-markdown-template .chat-code-block__pre,
   .agent-stream-display .chat-code-block__pre {
     .hljs {
-      color: #c9d1d9;
+      color: #c9d1d9 !important;
     }
 
     .hljs-doctag,
@@ -16,14 +43,14 @@ html[theme-mode='dark'] {
     .hljs-template-variable,
     .hljs-type,
     .hljs-variable.language_ {
-      color: #ff7b72;
+      color: #ff7b72 !important;
     }
 
     .hljs-title,
     .hljs-title.class_,
     .hljs-title.class_.inherited__,
     .hljs-title.function_ {
-      color: #d2a8ff;
+      color: #d2a8ff !important;
     }
 
     .hljs-attr,
@@ -36,39 +63,39 @@ html[theme-mode='dark'] {
     .hljs-selector-attr,
     .hljs-selector-class,
     .hljs-selector-id {
-      color: #79c0ff;
+      color: #79c0ff !important;
     }
 
     .hljs-regexp,
     .hljs-string,
     .hljs-meta .hljs-string {
-      color: #a5d6ff;
+      color: #a5d6ff !important;
     }
 
     .hljs-built_in,
     .hljs-symbol {
-      color: #ffa657;
+      color: #ffa657 !important;
     }
 
     .hljs-comment,
     .hljs-code,
     .hljs-formula {
-      color: #8b949e;
+      color: #8b949e !important;
     }
 
     .hljs-name,
     .hljs-quote,
     .hljs-selector-tag,
     .hljs-selector-pseudo {
-      color: #7ee787;
+      color: #7ee787 !important;
     }
 
     .hljs-subst {
-      color: #c9d1d9;
+      color: #c9d1d9 !important;
     }
 
     .hljs-section {
-      color: #1f6feb;
+      color: #1f6feb !important;
       font-weight: 700;
     }
   }
