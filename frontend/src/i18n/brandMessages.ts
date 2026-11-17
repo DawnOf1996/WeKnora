@@ -13,10 +13,15 @@
  *
  * 刻意不覆盖的条目（不要加进来）：
  *   - 技术字面量：X-WeKnora-Signature、aud=weknora、WEKNORA_* 环境变量、
- *     weknora-app / weknora-ui 服务名 —— 用户要照抄，删了会坏
+ *     @lyingbug/weknora 包名 —— 用户要照抄，删了会坏
  *   - 已隐藏功能的文案：WeKnora Cloud / CLI / Skill / Claw / Chrome 插件
  *   - E2B 沙箱模板名：settings.sandbox.weknora*Template —— 模板在集群里
  *     真的叫这个名字，改了用户就找不到模板
+ *
+ * 注意：「服务名」（weknora-app / weknora-ui / weknora-docreader）**不在**
+ * 刻意保留清单里 —— 它们只是上游 docker-compose 的服务名，出现在
+ * 「系统信息」页的说明文字里，普通用户看得见，属于要替换的展示文案。
+ * 真正的技术字面量是用户必须照抄的那些（请求头名、环境变量名、JWT claim）。
  */
 
 /** 需要覆盖的 key 集合（6 语言共用） */
@@ -46,6 +51,9 @@ export const BRAND_TEXT_KEYS = [
   'newUserGuide.steps.assistant.desc',
   'newUserGuide.steps.knowledge.desc',
   'newUserGuide.steps.welcome.title',
+  'system.versionDescription',
+  'system.frontendVersionDescription',
+  'system.docreaderVersionDescription',
 ] as const
 
 export type BrandTextKey = typeof BRAND_TEXT_KEYS[number]
@@ -99,8 +107,41 @@ export const BRAND_TEXT_EXCLUDED: Record<string, BrandTextExclusionReason> = {
 
   // ── 技术字面量：用户要照抄 ──────────────────────────────────────────
   'embedPublish.webhookSecretPlaceholder': 'technical-literal',
+  // ClawHub 上的 npm 包名与它要求的 API 环境变量
+  'integrations.claw.ecosystemNote': 'technical-literal',
+  'integrations.claw.hubMeta': 'technical-literal',
+  'integrations.claw.steps.env.desc': 'technical-literal',
+  // JWT 的 aud claim
+  'integrations.api.signedRequestStep0': 'technical-literal',
+  // Webhook 回调 URL 的路径示例
+  'embedPublish.webhookUrlPlaceholder': 'technical-literal',
+  // 沙箱保留的环境变量前缀
+  'envVarSettings.host.nameInvalid': 'technical-literal',
+  'envVarSettings.nameInvalid': 'technical-literal',
+  'settings.sandbox.allocationModeUnavailable': 'technical-literal',
 
-  // ── 真实存在的技术对象名（E2B 模板 / 镜像 / 部署主机）────────────────
+  // ── CLI 二进制/配置档的真实名字（功能入口已隐藏）────────────────────
+  'integrations.cli.connectDesc': 'hidden-feature',
+  'integrations.cli.mcpDesc': 'hidden-feature',
+
+  // ── DocReader：部署里真实存在的文档解析服务名 ───────────────────────
+  // 与 DOCREADER_* 环境变量同源。解析引擎在集群里就叫 DocReader，
+  // 报错提示里改名会让用户找不到对应的服务和日志。
+  'system.docreaderVersionLabel': 'real-object-name',
+  'kbSettings.parser.engines.builtin.desc': 'real-object-name',
+  'settings.parser.noEngineDetected': 'real-object-name',
+  'settings.parser.builtinDesc': 'real-object-name',
+  'settings.parser.ensureDocreaderConnected': 'real-object-name',
+  'knowledgeStages.errorCode.DOCREADER_UNAVAILABLE_SUGGESTION': 'real-object-name',
+  'knowledgeStages.errorCode.DOCREADER_TIMEOUT_SUGGESTION': 'real-object-name',
+  'knowledgeStages.errorCode.DOCREADER_PARSE_FAILED_SUGGESTION': 'real-object-name',
+  'settings.parser.envVarHint': 'technical-literal',
+
+  // ── 真实存在的技术对象名（E2B 模板 / 镜像 / 部署主机 / 存储路径前缀）────
+  // 存储路径前缀是对象实际落盘的路径（示例值与上游 docker-compose 一致），
+  // 改掉示例可能与后端实际配置对不上。
+  'settings.storage.prefixPlaceholder': 'real-object-name',
+  'settings.storage.pathPrefixPlaceholder': 'real-object-name',
   'settings.sandbox.dockerHostRisk': 'real-object-name',
   'settings.sandbox.weknoraTemplateTitle': 'real-object-name',
   'settings.sandbox.weknoraDockerImage': 'real-object-name',
@@ -148,6 +189,9 @@ export const BRAND_TEXT_TEMPLATES: Record<string, Record<BrandTextKey, string>> 
     'newUserGuide.steps.assistant.desc': '可以问 {brand} 的版本、功能和配置，也可以结合当前页面，以你的身份创建智能体、设置定时任务或整理知识。',
     'newUserGuide.steps.knowledge.desc': '知识库是一切的起点：上传文档、网页或 FAQ，{brand} 会自动解析并建立索引。点击这里进入知识库。',
     'newUserGuide.steps.welcome.title': '欢迎使用 {brand}',
+    'system.versionDescription': '当前应用服务的版本号',
+    'system.frontendVersionDescription': '当前 UI 界面的构建版本号',
+    'system.docreaderVersionDescription': '当前 DocReader 服务的构建版本号',
   },
 
   'zh-TW': {
@@ -176,6 +220,9 @@ export const BRAND_TEXT_TEMPLATES: Record<string, Record<BrandTextKey, string>> 
     'newUserGuide.steps.assistant.desc': '可以詢問 {brand} 的版本、功能與設定，也可以結合目前頁面，以你的身分建立智慧代理、設定定時任務或整理知識。',
     'newUserGuide.steps.knowledge.desc': '知識庫是一切的起點：上傳文件、網頁或 FAQ，{brand} 會自動解析並建立索引。點擊這裡進入知識庫。',
     'newUserGuide.steps.welcome.title': '歡迎使用 {brand}',
+    'system.versionDescription': '目前應用服務的版本號',
+    'system.frontendVersionDescription': '目前 UI 界面的建構版本號',
+    'system.docreaderVersionDescription': '目前 DocReader 服務的建構版本號',
   },
 
   'en-US': {
@@ -204,6 +251,9 @@ export const BRAND_TEXT_TEMPLATES: Record<string, Record<BrandTextKey, string>> 
     'newUserGuide.steps.assistant.desc': 'Ask about {brand} versions, features and setup. Using the current page as context, the assistant can create agents, schedule tasks and organize knowledge on your behalf, within your permissions.',
     'newUserGuide.steps.knowledge.desc': 'Everything starts here: upload documents, web pages or FAQs and {brand} parses and indexes them automatically. Click here to open knowledge bases.',
     'newUserGuide.steps.welcome.title': 'Welcome to {brand}',
+    'system.versionDescription': 'Version of the application service',
+    'system.frontendVersionDescription': 'Build version of the UI',
+    'system.docreaderVersionDescription': 'Build version of the DocReader service',
   },
 
   // 俄语产品名是可变格名词，因此模板只把品牌名放在主格/宾格位置，
@@ -234,6 +284,9 @@ export const BRAND_TEXT_TEMPLATES: Record<string, Record<BrandTextKey, string>> 
     'newUserGuide.steps.assistant.desc': 'Задавайте вопросы о версиях, функциях и настройках сервиса. Учитывая текущую страницу, помощник может создавать агентов, планировать задачи и упорядочивать знания от вашего имени, в пределах ваших прав.',
     'newUserGuide.steps.knowledge.desc': 'С этого всё начинается: загружайте документы, веб-страницы или FAQ, и {brand} автоматически разберёт и проиндексирует их. Нажмите здесь, чтобы открыть базы знаний.',
     'newUserGuide.steps.welcome.title': 'Добро пожаловать! Это {brand}.',
+    'system.versionDescription': 'Версия сервиса приложения',
+    'system.frontendVersionDescription': 'Версия сборки UI',
+    'system.docreaderVersionDescription': 'Версия сборки сервиса DocReader',
   },
 
   'ko-KR': {
@@ -262,6 +315,9 @@ export const BRAND_TEXT_TEMPLATES: Record<string, Record<BrandTextKey, string>> 
     'newUserGuide.steps.assistant.desc': '{brand}의 버전, 기능, 설정에 대해 질문할 수 있습니다. 현재 페이지를 바탕으로 사용자의 권한 내에서 에이전트를 만들고, 작업을 예약하고, 지식을 정리할 수도 있습니다.',
     'newUserGuide.steps.knowledge.desc': '모든 것의 시작점입니다. 문서, 웹페이지, FAQ를 업로드하면 {brand}가 자동으로 분석하고 색인합니다. 여기를 클릭해 지식 베이스로 이동하세요.',
     'newUserGuide.steps.welcome.title': '{brand}에 오신 것을 환영합니다',
+    'system.versionDescription': '애플리케이션 서비스의 버전 번호',
+    'system.frontendVersionDescription': 'UI 빌드 버전 번호',
+    'system.docreaderVersionDescription': 'DocReader 서비스의 빌드 버전',
   },
 
   'ja-JP': {
@@ -290,6 +346,9 @@ export const BRAND_TEXT_TEMPLATES: Record<string, Record<BrandTextKey, string>> 
     'newUserGuide.steps.assistant.desc': '{brand} のバージョン、機能、設定について質問できます。現在のページをもとに、あなたの権限でエージェントの作成、定期タスクの設定、ナレッジの整理も行えます。',
     'newUserGuide.steps.knowledge.desc': 'すべてはここから始まります。ドキュメント、Webページ、FAQをアップロードすると、{brand}が自動で解析してインデックスを作成します。ここをクリックしてナレッジベースを開いてください。',
     'newUserGuide.steps.welcome.title': '{brand}へようこそ',
+    'system.versionDescription': 'アプリケーションサービスのバージョン',
+    'system.frontendVersionDescription': 'UI のビルドバージョン',
+    'system.docreaderVersionDescription': 'DocReader サービスのビルドバージョン',
   },
 }
 
