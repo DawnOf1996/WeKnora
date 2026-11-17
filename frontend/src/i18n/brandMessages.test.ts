@@ -62,6 +62,33 @@ test('every locale substitutes its own product name', () => {
   }
 })
 
+test('system info page carries no upstream service names', () => {
+  // 上游原文：'当前应用服务（weknora-app）的版本号' 等 3 条。
+  // weknora-app / weknora-ui / weknora-docreader 是上游 docker-compose 的
+  // 服务名，出现在「系统信息」页的说明文字里，普通用户看得见 —— 必须换掉。
+  const keys = [
+    'system.versionDescription',
+    'system.frontendVersionDescription',
+    'system.docreaderVersionDescription',
+  ] as const
+  for (const locale of Object.keys(BRAND_TEXT_TEMPLATES)) {
+    const messages = buildBrandMessages(locale, 'X', 'Y')
+    for (const key of keys) {
+      assert.ok(
+        !/weknora/i.test(messages[key]),
+        `${locale}/${key} 仍含上游服务名：${messages[key]}`,
+      )
+      assert.ok(messages[key].length > 0, `${locale}/${key} 覆盖后不应为空`)
+    }
+    // DocReader 是部署里真实的解析服务名（与 DOCREADER_* 环境变量同源），
+    // 保留它才能和上一行的「Docreader 版本」标签对得上。
+    assert.ok(
+      messages['system.docreaderVersionDescription'].includes('DocReader'),
+      `${locale} 的 DocReader 说明应保留服务名，与标签保持一致`,
+    )
+  }
+})
+
 test('exclusion list uses known reasons only', () => {
   const reasons = new Set(['hidden-feature', 'technical-literal', 'real-object-name'])
   for (const [key, reason] of Object.entries(BRAND_TEXT_EXCLUDED)) {
