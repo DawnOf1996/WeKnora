@@ -1340,6 +1340,9 @@ function canRebuildTemplate(item: SandboxTemplate): boolean {
 
 function templateDisplayName(item: SandboxTemplate): string {
   if (item.standard) return t('settings.sandbox.weknoraStandardTemplate')
+  // 桌面模板同样有官方显示名：上游把它落到 return name，会直接把 API 返回的
+  // 原始标识（weknora-desktop）显示在卡片标题上。
+  if (item.desktop) return t('settings.sandbox.weknoraDesktopTemplate')
   const name = item.name?.trim() || ''
   const id = item.id?.trim() || ''
   if (!name || name === id) return t('settings.sandbox.templateUnnamed')

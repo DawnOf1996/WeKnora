@@ -221,6 +221,20 @@ const messages = {
       ),
   },
 
+  // ── 沙箱模板显示名 ────────────────────────────────────────────────────
+  // 桌面模板在 templateDisplayName() 里原本没有分支：只有 standard 走 i18n，
+  // 其余落到 return name —— 于是 API 返回的原始标识（weknora-desktop）被
+  // 直接当成卡片标题显示出来。
+  {
+    id: 'sandbox-template-display-name',
+    file: 'src/components/SandboxConfigEditorDrawer.vue',
+    detect: (s) => s.includes("if (item.desktop) return t('settings.sandbox.weknoraDesktopTemplate')"),
+    apply: (s) => s.replace(
+      "  if (item.standard) return t('settings.sandbox.weknoraStandardTemplate')\n",
+      "  if (item.standard) return t('settings.sandbox.weknoraStandardTemplate')\n  if (item.desktop) return t('settings.sandbox.weknoraDesktopTemplate')\n",
+    ),
+  },
+
   // ── 页面元信息 ───────────────────────────────────────────────────────
   {
     id: 'index-html-title',
