@@ -50,6 +50,16 @@ test('listing Cube/E2B templates does not auto-ensure the desktop image', () => 
   )
 })
 
+test('desktop template cards use the localized display name', () => {
+  // 只有 standard 走 i18n 时，桌面模板会落到 return name，把 API 返回的原始
+  // 标识（weknora-desktop）直接当标题显示出来。
+  assert.match(
+    source,
+    /if \(item\.desktop\) return t\('settings\.sandbox\.weknoraDesktopTemplate'\)/,
+    'listed desktop templates must not show the raw provider-side id',
+  )
+})
+
 test('saving records desktop_enabled from the selected catalog card', () => {
   assert.match(
     source,
