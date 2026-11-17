@@ -6,8 +6,8 @@
  * 但上游 locale 文件会变 —— 可能新增含 WeKnora 的文案，也可能删除/改写
  * 已被覆盖的 key。这个脚本做三方对账：
  *
- *   ✅ 已覆盖      上游该条仍含 WeKnora，覆盖层已接管
- *   ⚠️ 上游新增    上游新增了含 WeKnora 的文案，覆盖层还没接管 → 需人工评估
+ *   ✅ 已覆盖      上游该条仍含品牌词，覆盖层已接管
+ *   ⚠️ 上游新增    上游新增了含品牌词的文案，覆盖层还没接管 → 需人工评估
  *   🗑️ 覆盖失效    覆盖层覆盖的 key 在上游已不存在，或上游已自行去掉品牌字样
  *                  → 覆盖层里的这行已无意义，可清理
  *
@@ -42,10 +42,19 @@ function loadLocale(locale: string): LocaleTree {
   }
 }
 
-/** 收集所有 value 含 WeKnora 的条目 → key 路径集合 */
+/**
+ * 收集所有 value 含上游专有名称的条目 → key 路径集合
+ *
+ * 匹配大小写不敏感，且覆盖两类上游专有名称：
+ *   WeKnora   产品自称（WeKnora / weknora-app / WEKNORA_* 三种写法）
+ *   DocReader 文档解析服务名（DocReader / DOCREADER_* 两种写法）
+ *
+ * 早先只匹配 `WeKnora`，导致小写服务名（weknora-app 等）整类漏检 ——
+ * 「系统信息」页那三条说明文字就是这么漏掉的。
+ */
 function collectBrandText(node: unknown, path: string[] = [], out = new Set<string>()): Set<string> {
   if (typeof node === 'string') {
-    if (node.includes('WeKnora')) out.add(path.join('.'))
+    if (/weknora|docreader/i.test(node)) out.add(path.join('.'))
     return out
   }
   if (node && typeof node === 'object') {
@@ -86,7 +95,7 @@ for (const locale of targets) {
   )
 
   console.log(`\n===== ${locale} =====`)
-  console.log(`  上游含 WeKnora 的文案 : ${upstreamBrandText.size} 条`)
+  console.log(`  上游含品牌词的文案   : ${upstreamBrandText.size} 条`)
   console.log(`  ✅ 覆盖层已接管       : ${stillNeeded.length} 条`)
   console.log(`  ⊘ 刻意保留（原样）    : ${excludedStill.length} 条`)
   console.log(`  ⚠️ 上游新增未覆盖     : ${upstreamNew.length} 条`)
