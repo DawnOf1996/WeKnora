@@ -26,33 +26,38 @@
 
 :root:root[data-theme-skin="punk"] {
     /* ---------------------------------------------------------
-     * 品牌色 —— 荧光粉 + 酸性黄双主色
+     * 品牌色 —— 朋克黄主色（#ffc02d）
      * ---------------------------------------------------------
-     * 朋克美学的核心是「霓虹粉 + 酸黄」对撞。但色阶的深浅端并不等价：
+     * 主色由霓虹粉 #ff2d78 换为朋克黄 #ffc02d，整条品牌色阶
+     * 统一在同一黄色族（约 42° 色相）内按明度递进：
+     *   -1 低透明度黄（浅底槽）  -2 深琥珀  -3 暗金
+     *   -4 → -5 渐暗（hover 前景）  -6 主色 #ffc02d
+     *   -7 → -10 渐亮（active / 浅色文字位）
+     *
      * 深色主题下真正生效的品牌槽位是
      *   -1 → --td-brand-color-light  背景（菜单选中底 / 下拉选中与 hover 底 / tooltip 底）
      *   -2 → --td-brand-color-light-hover  背景
      *   -5 → --td-brand-color-hover   主按钮 hover 底 / ghost 按钮 hover 文字
      *   -6 → --td-brand-color         前景主色（链接、选中项文字、tooltip 文字）
      *   -7 → --td-brand-color-active  ghost 按钮 active 文字
-     * 其中 -1/-2 是「浅底槽」，是屏幕上成片小色块的来源；若它们与主色同族，
-     * 整屏就只剩一种粉。把浅底槽改走酸黄色系，前景（粉）保持不变，
-     * 即可得到「粉字压琥珀底」的朋克对撞，且只动这一个文件。
+     * 其中 -1/-2 是「浅底槽」，是屏幕上成片小色块的来源，与主色同族，
+     * 因此整屏呈现单一黄色调；前景（-5/-6/-7）同族但明度不同，
+     * 仍能拉开层次，不会糊成一片。
      */
-    --td-brand-color-1: #ffd60a26;
+    --td-brand-color-1: #ffc02d26;
     --td-brand-color-2: #5a4400;
     --td-brand-color-3: #7a5c00;
-    --td-brand-color-4: #821640;
-    --td-brand-color-5: #9e1b4c;
-    --td-brand-color-6: #ff2d78;
-    --td-brand-color-7: #ff5c99;
-    --td-brand-color-8: #ff8fb8;
-    --td-brand-color-9: #ffc0d8;
-    --td-brand-color-10: #ffe0ec;
+    --td-brand-color-4: #9c7600;
+    --td-brand-color-5: #c29512;
+    --td-brand-color-6: #ffc02d;
+    --td-brand-color-7: #ffd766;
+    --td-brand-color-8: #ffeba4;
+    --td-brand-color-9: #fff5d0;
+    --td-brand-color-10: #fffaf0;
     --td-brand-color: var(--td-brand-color-6);
     --td-brand-color-hover: var(--td-brand-color-5);
     --td-brand-color-active: var(--td-brand-color-7);
-    --td-brand-color-disabled: #7a2344;
+    --td-brand-color-disabled: #8a6a12;
     --td-brand-color-light: var(--td-brand-color-1);
     --td-brand-color-focus: color-mix(in srgb, var(--td-brand-color) 28%, transparent);
     --brand-main: var(--td-brand-color-6);
@@ -171,12 +176,12 @@ html[data-theme-skin="punk"] ::-moz-selection {
 html[theme-mode="dark"][data-theme-skin="punk"] .login-layout {
     background: linear-gradient(
         225deg,
-        #14030d 0%,
-        #26051a 15%,
-        #350722 25%,
-        #46092c 38%,
-        #6b0a3a 50%,
-        #ff2d78 62%,
+        #100c04 0%,
+        #221703 15%,
+        #301f04 25%,
+        #402a05 38%,
+        #6b3d05 50%,
+        #ffc02d 62%,
         #ff6b1a 74%,
         #ffd60a 86%,
         #fff3b0 100%
