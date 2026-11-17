@@ -15,13 +15,18 @@
  *   - 技术字面量：X-WeKnora-Signature、aud=weknora、WEKNORA_* 环境变量、
  *     @lyingbug/weknora 包名 —— 用户要照抄，删了会坏
  *   - 已隐藏功能的文案：WeKnora Cloud / CLI / Skill / Claw / Chrome 插件
- *   - E2B 沙箱模板名：settings.sandbox.weknora*Template —— 模板在集群里
- *     真的叫这个名字，改了用户就找不到模板
+ *   - 真实存在的对象名：DocReader 解析服务、存储路径前缀
  *
  * 注意：「服务名」（weknora-app / weknora-ui / weknora-docreader）**不在**
  * 刻意保留清单里 —— 它们只是上游 docker-compose 的服务名，出现在
  * 「系统信息」页的说明文字里，普通用户看得见，属于要替换的展示文案。
  * 真正的技术字面量是用户必须照抄的那些（请求头名、环境变量名、JWT claim）。
+ *
+ * 沙箱模板（settings.sandbox.weknora*Template）也不在刻意保留清单里：
+ * 那几条是**界面显示名**（"WeKnora 标准模板" 这类标题），用户看得见；
+ * 而模板在集群里的功能标识 weknora / weknora-desktop 由后端
+ * internal/sandbox/template_catalog.go 写死，前端只按 Standard / Desktop
+ * 两个结构标志识别模板，改显示名不影响功能。
  */
 
 /** 需要覆盖的 key 集合（6 语言共用） */
@@ -54,6 +59,23 @@ export const BRAND_TEXT_KEYS = [
   'system.versionDescription',
   'system.frontendVersionDescription',
   'system.docreaderVersionDescription',
+  'settings.sandbox.dockerHostRisk',
+  'settings.sandbox.dockerTlsCertPathHelp',
+  'settings.sandbox.dockerIdleTtlHelp',
+  'settings.sandbox.weknoraTemplateTitle',
+  'settings.sandbox.weknoraDockerImage',
+  'settings.sandbox.weknoraTemplateOverview',
+  'settings.sandbox.weknoraTemplateDescription',
+  'settings.sandbox.standardTemplateProvisioning',
+  'settings.sandbox.templateUntaggedHint',
+  'settings.sandbox.weknoraStandardTemplate',
+  'settings.sandbox.weknoraDesktopTemplate',
+  'settings.sandbox.replaceStandardTemplateConfirm',
+  'settings.sandbox.desktopTemplateProvisioning',
+  'settings.sandbox.replaceDesktopTemplateConfirm',
+  'settings.sandbox.cubeDnsServersHelp',
+  'settings.sandbox.backendDescriptions.docker',
+  'settings.sandbox.templateLoadHint',
 ] as const
 
 export type BrandTextKey = typeof BRAND_TEXT_KEYS[number]
@@ -137,32 +159,27 @@ export const BRAND_TEXT_EXCLUDED: Record<string, BrandTextExclusionReason> = {
   'knowledgeStages.errorCode.DOCREADER_PARSE_FAILED_SUGGESTION': 'real-object-name',
   'settings.parser.envVarHint': 'technical-literal',
 
-  // ── 真实存在的技术对象名（E2B 模板 / 镜像 / 部署主机 / 存储路径前缀）────
+  // ── 真实存在的技术对象名（存储路径前缀）────────────────────────────────
   // 存储路径前缀是对象实际落盘的路径（示例值与上游 docker-compose 一致），
   // 改掉示例可能与后端实际配置对不上。
+  //
+  // 注：settings.sandbox.* 的模板/镜像**显示名**不在这里，而是进了覆盖层。
+  // 那些是界面文案；功能标识（weknora / weknora-desktop）写在后端
+  // internal/sandbox/template_catalog.go，前端只按 Standard/Desktop
+  // 结构标志识别模板，改显示名不影响功能。
   'settings.storage.prefixPlaceholder': 'real-object-name',
   'settings.storage.pathPrefixPlaceholder': 'real-object-name',
-  'settings.sandbox.dockerHostRisk': 'real-object-name',
-  'settings.sandbox.weknoraTemplateTitle': 'real-object-name',
-  'settings.sandbox.weknoraDockerImage': 'real-object-name',
-  'settings.sandbox.weknoraTemplateOverview': 'real-object-name',
-  'settings.sandbox.weknoraTemplateDescription': 'real-object-name',
-  'settings.sandbox.standardTemplateProvisioning': 'real-object-name',
-  'settings.sandbox.templateUntaggedHint': 'real-object-name',
-  'settings.sandbox.weknoraStandardTemplate': 'real-object-name',
-  'settings.sandbox.weknoraDesktopTemplate': 'real-object-name',
-  'settings.sandbox.replaceStandardTemplateConfirm': 'real-object-name',
-  'settings.sandbox.desktopTemplateProvisioning': 'real-object-name',
-  'settings.sandbox.replaceDesktopTemplateConfirm': 'real-object-name',
-  'settings.sandbox.cubeDnsServersHelp': 'real-object-name',
-  'settings.sandbox.dockerTlsCertPathHelp': 'real-object-name',
-  'settings.sandbox.dockerIdleTtlHelp': 'real-object-name',
-  'settings.sandbox.backendDescriptions.docker': 'real-object-name',
-  'settings.sandbox.templateLoadHint': 'real-object-name',
 }
 
-/** 各语言的文案模板；运行时用 {brand} / {assistant} 填充 */
-export const BRAND_TEXT_TEMPLATES: Record<string, Record<BrandTextKey, string>> = {
+/**
+ * 各语言的文案模板；运行时用 {brand} / {assistant} 填充。
+ *
+ * 按语言可选（Partial）：**只写上游该语言确实含品牌词的那一条**。
+ * 比如 settings.sandbox.templateLoadHint 只有 en-US 原文带 "WeKnora CLI templates"，
+ * 其余 5 种语言上游就没写品牌名 —— 那几条不覆盖，上游改文案时我们跟着走。
+ * 反过来若上游哪天给中文也加了品牌词，对账脚本会把它报成「上游新增未覆盖」。
+ */
+export const BRAND_TEXT_TEMPLATES: Record<string, Partial<Record<BrandTextKey, string>>> = {
   'zh-CN': {
     'automation.description': '让 {assistant} 按计划以你的身份执行任务，结果和待审批事项会通知你。',
     'automation.addHint': '也可以直接让 {assistant} 帮你创建',
@@ -192,6 +209,21 @@ export const BRAND_TEXT_TEMPLATES: Record<string, Record<BrandTextKey, string>> 
     'system.versionDescription': '当前应用服务的版本号',
     'system.frontendVersionDescription': '当前 UI 界面的构建版本号',
     'system.docreaderVersionDescription': '当前 DocReader 服务的构建版本号',
+    'settings.sandbox.weknoraTemplateTitle': '标准模板',
+    'settings.sandbox.weknoraDockerImage': '标准镜像',
+    'settings.sandbox.weknoraTemplateOverview': '{brand} 负责提供标准运行环境。连接集群后会自动发现模板，缺少标准模板时自动创建。',
+    'settings.sandbox.weknoraTemplateDescription': '包含 {brand} 技能所需的 Python、Node.js、CLI 工具、工作目录和非 root 执行用户。',
+    'settings.sandbox.standardTemplateProvisioning': '已开始在集群中创建标准模板，请稍后刷新查看状态',
+    'settings.sandbox.templateUntaggedHint': '构建已完成，但没有构建带 default 标签，创建沙箱时无法解析。请在 E2B 删除该模板，刷新后 {brand} 会重新构建。',
+    'settings.sandbox.weknoraStandardTemplate': '标准模板',
+    'settings.sandbox.weknoraDesktopTemplate': '桌面模板',
+    'settings.sandbox.replaceStandardTemplateConfirm': '将用当前配置（含 DNS）重建标准模板。新模板就绪前不会删除仍可启动的旧模板。',
+    'settings.sandbox.desktopTemplateProvisioning': '已开始在集群中创建桌面模板，请稍后刷新查看状态',
+    'settings.sandbox.replaceDesktopTemplateConfirm': '将用当前配置（含 DNS）重建桌面模板。新模板就绪前不会删除仍可启动的旧桌面模板，也不会删除标准（CLI）模板。',
+    'settings.sandbox.cubeDnsServersHelp': '可选。写入标准模板的 nameserver（须为 IP）。留空则使用集群默认（常见 119.29.29.29）。私网或云上 UDP 53 出不去时，填 Cube 宿主机 /etc/resolv.conf 里能用的地址，并避开 10/8、172.16/12、192.168/16。已有标准模板需在模板卡片上点「重建」才会生效。',
+    'settings.sandbox.dockerHostRisk': '留空或 unix:// 会使用 {brand} 所在机器的 Docker 守护进程，权限等同该机 root，只适合私有化单机。多套空间共用同一主机时请改用 Cube 或 E2B。远程 tcp:// 必须填写 TLS 证书目录。',
+    'settings.sandbox.dockerTlsCertPathHelp': '{brand} 所在主机上包含 ca.pem、cert.pem、key.pem 的目录。远程守护进程必填，证书不入库，由部署方挂载。',
+    'settings.sandbox.dockerIdleTtlHelp': 'Docker 守护进程本身没有空闲超时。容器多久没有执行任何命令就会被 {brand} 回收，会话继续时重建。留空按 1800 秒。',
   },
 
   'zh-TW': {
@@ -223,6 +255,21 @@ export const BRAND_TEXT_TEMPLATES: Record<string, Record<BrandTextKey, string>> 
     'system.versionDescription': '目前應用服務的版本號',
     'system.frontendVersionDescription': '目前 UI 界面的建構版本號',
     'system.docreaderVersionDescription': '目前 DocReader 服務的建構版本號',
+    'settings.sandbox.weknoraTemplateTitle': '標準模板',
+    'settings.sandbox.weknoraDockerImage': '標準映像',
+    'settings.sandbox.weknoraTemplateOverview': '{brand} 負責提供標準運行環境。連結叢集後會自動發現模板，缺少標準模板時自動建立。',
+    'settings.sandbox.weknoraTemplateDescription': '包含 {brand} 技能所需的 Python、Node.js、CLI 工具、工作目錄和非 root 執行使用者。',
+    'settings.sandbox.standardTemplateProvisioning': '已開始在叢集中建立標準模板，請稍後重新整理查看狀態',
+    'settings.sandbox.templateUntaggedHint': '建構已完成，但沒有建構帶 default 標籤，建立沙箱時無法解析。請在 E2B 刪除該模板，重新整理後 {brand} 會重新建構。',
+    'settings.sandbox.weknoraStandardTemplate': '標準模板',
+    'settings.sandbox.weknoraDesktopTemplate': '桌面模板',
+    'settings.sandbox.replaceStandardTemplateConfirm': '將用當前設定（含 DNS）重建標準模板。新模板就緒前不會刪除仍可啟動的舊模板。',
+    'settings.sandbox.desktopTemplateProvisioning': '已開始在叢集中建立桌面模板，請稍後重新整理查看狀態',
+    'settings.sandbox.replaceDesktopTemplateConfirm': '將用當前設定（含 DNS）重建桌面模板。新模板就緒前不會刪除仍可啟動的舊桌面模板，也不會刪除標準（CLI）模板。',
+    'settings.sandbox.cubeDnsServersHelp': '可選。寫入標準模板的 nameserver（須為 IP）。留空則使用叢集預設（常見 119.29.29.29）。私網或雲上 UDP 53 出不去時，填 Cube 宿主機 /etc/resolv.conf 裡能用的地址，並避開 10/8、172.16/12、192.168/16。已有標準模板需在模板卡片上點「重建」才會生效。',
+    'settings.sandbox.dockerHostRisk': '留空或 unix:// 會使用 {brand} 所在機器的 Docker 守護行程，權限等同該機 root，只適合私有化單機。多套空間共用同一主機時請改用 Cube 或 E2B。遠程 tcp:// 必須填寫 TLS 證書目錄。',
+    'settings.sandbox.dockerTlsCertPathHelp': '{brand} 所在主機上包含 ca.pem、cert.pem、key.pem 的目錄。遠程守護行程必填，證書不入庫，由部署方掛載。',
+    'settings.sandbox.dockerIdleTtlHelp': 'Docker 守護行程本身沒有空閒超時。容器多久沒有執行任何命令就會被 {brand} 回收，會話繼續時重建。留空按 1800 秒。',
   },
 
   'en-US': {
@@ -254,6 +301,23 @@ export const BRAND_TEXT_TEMPLATES: Record<string, Record<BrandTextKey, string>> 
     'system.versionDescription': 'Version of the application service',
     'system.frontendVersionDescription': 'Build version of the UI',
     'system.docreaderVersionDescription': 'Build version of the DocReader service',
+    'settings.sandbox.weknoraTemplateTitle': 'Standard template',
+    'settings.sandbox.weknoraDockerImage': 'Standard image',
+    'settings.sandbox.weknoraTemplateOverview': '{brand} provides the standard runtime. Templates are discovered after connecting and the standard one is created when missing.',
+    'settings.sandbox.weknoraTemplateDescription': 'Includes the Python, Node.js, CLI tools, workspace path, and non-root execution user expected by {brand} skills.',
+    'settings.sandbox.standardTemplateProvisioning': 'The standard template is being created. Refresh shortly to see its status.',
+    'settings.sandbox.templateUntaggedHint': 'The builds finished but none carries the default tag, so sandbox creation cannot resolve this template. Delete it in E2B and refresh; {brand} will rebuild it.',
+    'settings.sandbox.weknoraStandardTemplate': 'Standard template',
+    'settings.sandbox.weknoraDesktopTemplate': 'Desktop template',
+    'settings.sandbox.replaceStandardTemplateConfirm': 'Rebuild the standard template with the current settings, including DNS. The previous spawnable template is not deleted until the replacement is ready.',
+    'settings.sandbox.desktopTemplateProvisioning': 'The desktop template is being created. Refresh shortly to see its status.',
+    'settings.sandbox.replaceDesktopTemplateConfirm': 'Rebuild the desktop template with the current settings, including DNS. The previous spawnable desktop template is not deleted until the replacement is ready. The CLI template is left untouched.',
+    'settings.sandbox.cubeDnsServersHelp': 'Optional. Nameserver IPs written into the standard template. Leave empty to use the cluster default (commonly 119.29.29.29). If UDP/53 to public resolvers is blocked, use reachable addresses from the Cube host\'s /etc/resolv.conf, excluding 10/8, 172.16/12, and 192.168/16. Existing standard templates take effect only after Rebuild on the template card.',
+    'settings.sandbox.dockerHostRisk': 'Empty or unix:// uses the Docker daemon on the {brand} host, which is equivalent to root on that machine. Use this only for a private single-node install. Prefer Cube or E2B when multiple workspaces share a host. Remote tcp:// endpoints require a TLS certificate directory.',
+    'settings.sandbox.dockerTlsCertPathHelp': 'Directory on the {brand} host holding ca.pem, cert.pem and key.pem. Required for a remote daemon; certificates are mounted by the deployment, never stored here.',
+    'settings.sandbox.dockerIdleTtlHelp': 'The Docker daemon has no idle timeout of its own. A container that runs no command for this long is reclaimed by {brand} and rebuilt when the session continues. Empty means 1800 seconds.',
+    'settings.sandbox.templateLoadHint': 'Enter the cluster connection and refresh. Missing CLI templates are built from the official Hub image. Desktop templates are larger; create them from the row below. After changing DNS or the image, rebuild from that card.',
+    'settings.sandbox.backendDescriptions.docker': 'Keep a long-lived container per session on this {brand} host; scripts and files stay in that container',
   },
 
   // 俄语产品名是可变格名词，因此模板只把品牌名放在主格/宾格位置，
@@ -287,6 +351,22 @@ export const BRAND_TEXT_TEMPLATES: Record<string, Record<BrandTextKey, string>> 
     'system.versionDescription': 'Версия сервиса приложения',
     'system.frontendVersionDescription': 'Версия сборки UI',
     'system.docreaderVersionDescription': 'Версия сборки сервиса DocReader',
+    'settings.sandbox.weknoraTemplateTitle': 'Стандартный шаблон',
+    'settings.sandbox.weknoraDockerImage': 'Стандартный образ',
+    'settings.sandbox.weknoraTemplateOverview': '{brand} предоставляет стандартную среду выполнения. Шаблоны обнаруживаются после подключения, а стандартный создаётся при его отсутствии.',
+    'settings.sandbox.weknoraTemplateDescription': 'Включает Python, Node.js, CLI-инструменты, путь рабочего каталога и пользователя без прав root, необходимые навыкам сервиса.',
+    'settings.sandbox.standardTemplateProvisioning': 'Стандартный шаблон создаётся. Обновите список чуть позже, чтобы увидеть статус.',
+    'settings.sandbox.templateUntaggedHint': 'Сборки завершены, но ни одна не имеет тега default, поэтому при создании песочницы шаблон не находится. Удалите его в E2B и обновите список — сервис пересоберёт шаблон.',
+    'settings.sandbox.weknoraStandardTemplate': 'Стандартный шаблон',
+    'settings.sandbox.weknoraDesktopTemplate': 'Шаблон рабочего стола',
+    'settings.sandbox.replaceStandardTemplateConfirm': 'Стандартный шаблон будет собран заново с текущими настройками, включая DNS. Предыдущий готовый шаблон не удаляется, пока замена не станет готовой к запуску.',
+    'settings.sandbox.desktopTemplateProvisioning': 'Шаблон рабочего стола создаётся. Обновите список чуть позже, чтобы увидеть статус.',
+    'settings.sandbox.replaceDesktopTemplateConfirm': 'Шаблон рабочего стола будет собран заново с текущими настройками, включая DNS. Предыдущий готовый шаблон рабочего стола не удаляется, пока замена не станет готовой к запуску. Шаблон CLI не затрагивается.',
+    'settings.sandbox.cubeDnsServersHelp': 'Необязательно. IP nameserver, которые записываются в стандартный шаблон. Пустое значение оставляет значение кластера по умолчанию (обычно 119.29.29.29). Если UDP/53 до публичных резолверов недоступен, укажите достижимые адреса из /etc/resolv.conf хоста Cube, исключая 10/8, 172.16/12 и 192.168/16. Чтобы изменение вступило в силу, на карточке шаблона нажмите «Пересобрать».',
+    'settings.sandbox.dockerHostRisk': 'Пустое значение или unix:// использует демон Docker на машине, где работает сервис, — это равносильно root на этой машине. Только для частной одноузловой установки. Если несколько пространств делят один хост, используйте Cube или E2B. Удалённый tcp:// требует каталог TLS-сертификатов.',
+    'settings.sandbox.dockerTlsCertPathHelp': 'Каталог на хосте, где работает сервис, с файлами ca.pem, cert.pem и key.pem. Обязателен для удалённого демона; сертификаты монтируются при развёртывании и здесь не хранятся.',
+    'settings.sandbox.dockerIdleTtlHelp': 'У самого демона Docker нет таймаута простоя. Контейнер, в котором столько времени не выполнялись команды, утилизируется сервисом и пересоздаётся при продолжении сессии. Пустое значение означает 1800 секунд.',
+    'settings.sandbox.backendDescriptions.docker': 'Держит долгоживущий контейнер на каждую сессию на этом хосте; скрипты и файлы остаются в том же контейнере',
   },
 
   'ko-KR': {
@@ -318,6 +398,22 @@ export const BRAND_TEXT_TEMPLATES: Record<string, Record<BrandTextKey, string>> 
     'system.versionDescription': '애플리케이션 서비스의 버전 번호',
     'system.frontendVersionDescription': 'UI 빌드 버전 번호',
     'system.docreaderVersionDescription': 'DocReader 서비스의 빌드 버전',
+    'settings.sandbox.weknoraTemplateTitle': '표준 템플릿',
+    'settings.sandbox.weknoraDockerImage': '표준 이미지',
+    'settings.sandbox.weknoraTemplateOverview': '{brand}가 표준 런타임 환경을 제공합니다. 연결하면 템플릿을 자동으로 검색하며, 표준 템플릿이 없으면 자동으로 생성합니다.',
+    'settings.sandbox.weknoraTemplateDescription': '{brand} 스킬에 필요한 Python, Node.js, CLI 도구, 작업 디렉터리와 root 권한이 아닌 실행 사용자가 포함됩니다.',
+    'settings.sandbox.standardTemplateProvisioning': '표준 템플릿을 만들고 있습니다. 잠시 후 새로고침해 상태를 확인하세요.',
+    'settings.sandbox.templateUntaggedHint': '빌드는 끝났지만 default 태그가 붙은 빌드가 없어 샌드박스 생성 시 이 템플릿을 찾을 수 없습니다. E2B에서 템플릿을 삭제하고 새로고침하면 {brand}가 다시 빌드합니다.',
+    'settings.sandbox.weknoraStandardTemplate': '표준 템플릿',
+    'settings.sandbox.weknoraDesktopTemplate': '데스크톱 템플릿',
+    'settings.sandbox.replaceStandardTemplateConfirm': '현재 설정(DNS 포함)으로 표준 템플릿을 다시 만듭니다. 새 템플릿이 준비되기 전에는 기존에 쓸 수 있는 템플릿을 삭제하지 않습니다.',
+    'settings.sandbox.desktopTemplateProvisioning': '데스크톱 템플릿을 만들고 있습니다. 잠시 후 새로고침해 상태를 확인하세요.',
+    'settings.sandbox.replaceDesktopTemplateConfirm': '현재 설정(DNS 포함)으로 데스크톱 템플릿을 다시 만듭니다. 새 템플릿이 준비되기 전에는 기존에 쓸 수 있는 데스크톱 템플릿을 삭제하지 않으며, CLI 템플릿은 그대로 둡니다.',
+    'settings.sandbox.cubeDnsServersHelp': '선택 사항입니다. 표준 템플릿에 기록되는 nameserver IP입니다. 비워 두면 클러스터 기본값(보통 119.29.29.29)을 사용합니다. 공용 DNS로 UDP/53이 나가지 않으면 Cube 호스트 /etc/resolv.conf에서 도달 가능한 주소를 넣고, 10/8, 172.16/12, 192.168/16은 피하세요. 이미 있는 표준 템플릿은 카드에서 「재구축」을 눌러야 변경이 적용됩니다.',
+    'settings.sandbox.dockerHostRisk': '비우거나 unix:// 를 쓰면 {brand}가 있는 머신의 Docker 데몬을 사용하며, 그 권한은 해당 머신의 root와 같습니다. 프라이빗 단일 노드에만 쓰세요. 여러 워크스페이스가 같은 호스트를 쓰는 경우에는 Cube 또는 E2B를 쓰세요. 원격 tcp:// 는 TLS 인증서 디렉터리가 필요합니다.',
+    'settings.sandbox.dockerTlsCertPathHelp': '{brand}가 있는 호스트에서 ca.pem, cert.pem, key.pem을 담고 있는 디렉터리입니다. 원격 데몬에는 필수이며, 인증서는 배포 시 마운트되어 여기에는 저장되지 않습니다.',
+    'settings.sandbox.dockerIdleTtlHelp': 'Docker 데몬 자체에는 유휴 제한 시간이 없습니다. 이 시간 동안 명령을 실행하지 않은 컨테이너는 {brand}가 회수하며, 세션이 이어지면 다시 만듭니다. 비우면 1800초입니다.',
+    'settings.sandbox.backendDescriptions.docker': '이 {brand} 호스트의 Docker에서 세션마다 장수명 컨테이너를 유지합니다. 스크립트와 파일이 같은 컨테이너에 남습니다',
   },
 
   'ja-JP': {
@@ -349,6 +445,22 @@ export const BRAND_TEXT_TEMPLATES: Record<string, Record<BrandTextKey, string>> 
     'system.versionDescription': 'アプリケーションサービスのバージョン',
     'system.frontendVersionDescription': 'UI のビルドバージョン',
     'system.docreaderVersionDescription': 'DocReader サービスのビルドバージョン',
+    'settings.sandbox.weknoraTemplateTitle': '標準テンプレート',
+    'settings.sandbox.weknoraDockerImage': '標準イメージ',
+    'settings.sandbox.weknoraTemplateOverview': '{brand}が標準ランタイムを提供します。テンプレートは接続後に検出され、存在しない場合は標準テンプレートが作成されます。',
+    'settings.sandbox.weknoraTemplateDescription': '{brand}のスキルが必要とするPython、Node.js、CLIツール、ワークスペースパス、非root実行ユーザが含まれます。',
+    'settings.sandbox.standardTemplateProvisioning': '標準テンプレートを作成しています。しばらくしてから更新してステータスを確認してください。',
+    'settings.sandbox.templateUntaggedHint': 'ビルドは完了しましたが、デフォルトタグが付いたものがないため、サンドボックス作成時にこのテンプレートを解決できません。E2Bで削除して更新すると、{brand}が再構築します。',
+    'settings.sandbox.weknoraStandardTemplate': '標準テンプレート',
+    'settings.sandbox.weknoraDesktopTemplate': 'デスクトップテンプレート',
+    'settings.sandbox.replaceStandardTemplateConfirm': 'DNSを含む現在の設定で標準テンプレートを再構築します。既存の起動可能なテンプレートは、新しいテンプレートの準備が整うまで削除されません。',
+    'settings.sandbox.desktopTemplateProvisioning': 'デスクトップテンプレートを作成しています。しばらくしてから更新してステータスを確認してください。',
+    'settings.sandbox.replaceDesktopTemplateConfirm': 'DNSを含む現在の設定でデスクトップテンプレートを再構築します。既存の起動可能なデスクトップテンプレートは、新しいテンプレートの準備が整うまで削除されません。CLIテンプレートは変更しません。',
+    'settings.sandbox.cubeDnsServersHelp': '任意。標準テンプレートに書き込まれるネームサーバのIPです。空欄の場合はクラスタのデフォルト（通常は119.29.29.29）を使用します。パブリックリゾルバへのUDP/53がブロックされている場合は、Cubeホストの/etc/resolv.confから到達可能なアドレス（10/8、172.16/12、192.168/16を除く）を指定してください。既存の標準テンプレートには、テンプレートカードで「再構築」を実行した後にのみ反映されます。',
+    'settings.sandbox.dockerHostRisk': '空欄またはunix://を指定すると{brand}ホストのDockerデーモンを使用します。これはそのマシンのroot権限に相当します。単一ノードのプライベート環境でのみ使用してください。複数のワークスペースがホストを共有する場合はCubeまたはE2Bを推奨します。リモートのtcp://エンドポイントにはTLS証明書ディレクトリが必要です。',
+    'settings.sandbox.dockerTlsCertPathHelp': '{brand}ホスト上でca.pem、cert.pem、key.pemを格納しているディレクトリです。リモートデーモンでは必須です。証明書はデプロイ側でマウントされ、ここには保存されません。',
+    'settings.sandbox.dockerIdleTtlHelp': 'Dockerデーモン自体にはアイドルタイムアウトがありません。この時間コマンドが実行されなかったコンテナは{brand}が回収し、セッションが続く場合は再作成します。空欄の場合は1800秒です。',
+    'settings.sandbox.backendDescriptions.docker': 'この{brand}ホスト上でセッションごとに長時間稼働するコンテナを保持します。スクリプトとファイルはそのコンテナ内に残ります',
   },
 }
 
