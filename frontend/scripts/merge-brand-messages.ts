@@ -8,8 +8,14 @@
  *
  *   ✅ 已覆盖      上游该条仍含品牌词，覆盖层已接管
  *   ⚠️ 上游新增    上游新增了含品牌词的文案，覆盖层还没接管 → 需人工评估
- *   🗑️ 覆盖失效    覆盖层覆盖的 key 在上游已不存在，或上游已自行去掉品牌字样
- *                  → 覆盖层里的这行已无意义，可清理
+ *   🗑️ 覆盖失效    覆盖层覆盖的 key 在上游已被删除 → 覆盖层里的这行已无意义
+ *   ⊘ 覆盖冗余    上游该 key 还在，但上游自己已去掉品牌字样 → 覆盖层可以清理，
+ *                  但不影响功能，不计入失败
+ *
+ * 覆盖层按语言可选（Partial）：只有该语言上游原文确实含品牌词的那一条才会
+ * 被写进模板。因此「已覆盖」是**按语言**算的，而不是对所有语言统一算 ——
+ * 比如 settings.sandbox.templateLoadHint 只有 en-US 原文带品牌词，其余 5 种
+ * 语言不覆盖，上游改文案时我们跟着走。
  *
  * 用法：
  *   npm run branding:merge                # 全量对账
@@ -75,21 +81,43 @@ function pick(node: LocaleTree, path: string): string | undefined {
   return typeof cursor === 'string' ? cursor : undefined
 }
 
-const covered = new Set<string>(BRAND_TEXT_KEYS)
+const coveredAll = new Set<string>(BRAND_TEXT_KEYS)
 let needsAttention = 0
+
+// 登记清单必须等于所有语言模板的并集 —— 少登记 = 对账漏检，多登记 = 幽灵条目
+const unionAll = new Set<string>()
+for (const templates of Object.values(BRAND_TEXT_TEMPLATES)) {
+  for (const key of Object.keys(templates)) unionAll.add(key)
+}
+const unregistered = [...coveredAll].filter((k) => !unionAll.has(k))
+const ghosts = [...unionAll].filter((k) => !coveredAll.has(k))
+if (unregistered.length || ghosts.length) {
+  needsAttention += unregistered.length + ghosts.length
+  console.log('\n===== 覆盖层登记 =====')
+  console.log(`  ⚠️ 登记了但没有任何语言模板 : ${unregistered.length} 条`)
+  for (const k of unregistered) console.log(`       - ${k}`)
+  console.log(`  ⚠️ 模板里有但没登记         : ${ghosts.length} 条`)
+  for (const k of ghosts) console.log(`       - ${k}`)
+  console.log('     → BRAND_TEXT_KEYS 必须与各语言模板的并集完全一致')
+}
 
 for (const locale of targets) {
   const tree = loadLocale(locale)
   const upstreamBrandText = collectBrandText(tree)
+  // 覆盖层按语言可选：只看该语言真正写了模板的那几条
+  const covered = new Set<string>(Object.keys(BRAND_TEXT_TEMPLATES[locale] || {}))
 
   const stillNeeded = [...covered].filter((k) => upstreamBrandText.has(k))
-  const excludedStill = [...covered].length >= 0
-    ? [...upstreamBrandText].filter((k) => BRAND_TEXT_EXCLUDED[k] !== undefined)
-    : []
+  const excludedStill = [...upstreamBrandText].filter((k) => BRAND_TEXT_EXCLUDED[k] !== undefined)
   const upstreamNew = [...upstreamBrandText].filter(
     (k) => !covered.has(k) && BRAND_TEXT_EXCLUDED[k] === undefined,
   )
-  const stale = [...covered].filter((k) => !upstreamBrandText.has(k))
+  // 上游把 key 删了 → 覆盖层这行已无意义，需要清理
+  const stale = [...covered].filter((k) => pick(tree, k) === undefined)
+  // 上游 key 还在、只是自己去了品牌字样 → 覆盖层变冗余，不影响功能
+  const redundant = [...covered].filter(
+    (k) => pick(tree, k) !== undefined && !upstreamBrandText.has(k),
+  )
   const excludedGone = Object.keys(BRAND_TEXT_EXCLUDED).filter(
     (k) => !upstreamBrandText.has(k) && !covered.has(k),
   )
@@ -100,6 +128,7 @@ for (const locale of targets) {
   console.log(`  ⊘ 刻意保留（原样）    : ${excludedStill.length} 条`)
   console.log(`  ⚠️ 上游新增未覆盖     : ${upstreamNew.length} 条`)
   console.log(`  🗑️ 覆盖已失效         : ${stale.length} 条`)
+  if (redundant.length) console.log(`  ⊘ 覆盖变冗余（可清理）: ${redundant.length} 条`)
 
   if (upstreamNew.length) {
     needsAttention += upstreamNew.length
@@ -117,10 +146,14 @@ for (const locale of targets) {
     needsAttention += stale.length
     console.log(`  ── 覆盖已失效，需清理 ──`)
     for (const k of stale) {
-      const v = pick(tree, k)
-      console.log(`       - ${k}${v === undefined ? '  (上游已删除该 key)' : '  (上游已自行去掉品牌字样)'}`)
+      console.log(`       - ${k}  (上游已删除该 key)`)
     }
     console.log(`     → 从 brandMessages.ts 的 BRAND_TEXT_TEMPLATES 中移除。`)
+  }
+
+  if (redundant.length) {
+    console.log('  ── 覆盖变冗余（上游已自行去掉品牌字样，可清理，不影响功能）──')
+    for (const k of redundant) console.log(`       - ${k}`)
   }
 
   if (excludedGone.length) {
