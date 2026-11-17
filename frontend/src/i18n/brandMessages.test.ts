@@ -12,12 +12,21 @@ test('every covered key exists in all six locale templates', () => {
   }
 })
 
+/**
+ * 模板里允许出现的技术字面量 —— 用户必须照抄，删了会坏。
+ * 检测品牌词时先把这些片段摘掉，再判断是否还有残留。
+ */
+const ALLOWED_TECHNICAL_LITERALS = [/aud=weknora/gi, /X-WeKnora-Signature/gi]
+
 test('no template still contains the upstream brand word', () => {
   for (const [locale, templates] of Object.entries(BRAND_TEXT_TEMPLATES)) {
     for (const [key, value] of Object.entries(templates)) {
+      // 大小写不敏感：上游同时存在 WeKnora / weknora-app / WEKNORA_* 三种写法
+      let rest = value
+      for (const literal of ALLOWED_TECHNICAL_LITERALS) rest = rest.replace(literal, '')
       assert.ok(
-        !value.includes('WeKnora'),
-        `${locale}/${key} 的模板里仍含 WeKnora：${value.slice(0, 80)}`,
+        !/weknora/i.test(rest),
+        `${locale}/${key} 的模板里仍含品牌词：${value.slice(0, 80)}`,
       )
     }
   }

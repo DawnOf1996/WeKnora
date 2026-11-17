@@ -1,4 +1,4 @@
-// 提取 locale 文件中所有 value 含 WeKnora 的条目及其完整点分 key 路径。
+// 提取 locale 文件中所有 value 含品牌词的条目及其完整点分 key 路径。
 //
 // 用法:
 //   node scripts/list-brand-text.mjs                      列出全部 6 种语言
@@ -8,6 +8,11 @@
 //   node scripts/list-brand-text.mjs zh-CN settings.docsUrl      只看指定 key
 //
 // 输出格式: <点分 key 路径>\t<原始 value>
+//
+// 匹配大小写不敏感，且覆盖两类上游专有名称：
+//   WeKnora    产品自称（WeKnora / weknora-app / WEKNORA_* 三种写法）
+//   DocReader  文档解析服务名（DocReader / DOCREADER_* 两种写法）
+// 只匹配 `WeKnora` 会漏掉小写服务名。
 import { readFileSync, existsSync } from 'node:fs'
 import { resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -15,7 +20,7 @@ import { fileURLToPath } from 'node:url'
 const here = dirname(fileURLToPath(import.meta.url))
 const LOCALE_DIR = resolve(here, '../src/i18n/locales')
 const LOCALES = ['zh-CN', 'zh-TW', 'en-US', 'ru-RU', 'ko-KR', 'ja-JP']
-const BRAND_WORD = 'WeKnora'
+const BRAND_WORD = /weknora|docreader/i
 
 const args = process.argv.slice(2)
 
@@ -64,7 +69,7 @@ for (const { name, path } of resolved) {
   const rows = []
   const walk = (node, pathParts) => {
     if (typeof node === 'string') {
-      if (node.includes(BRAND_WORD)) rows.push({ path: pathParts.join('.'), value: node })
+      if (BRAND_WORD.test(node)) rows.push({ path: pathParts.join('.'), value: node })
       return
     }
     if (node && typeof node === 'object') {
