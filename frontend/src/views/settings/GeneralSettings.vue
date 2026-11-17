@@ -45,6 +45,7 @@
             <t-option value="light" :label="$t('theme.light')">{{ $t('theme.light') }}</t-option>
             <t-option value="dark" :label="$t('theme.dark')">{{ $t('theme.dark') }}</t-option>
             <t-option value="system" :label="$t('theme.system')">{{ $t('theme.system') }}</t-option>
+            <t-option value="punk" :label="punkThemeLabel">{{ punkThemeLabel }}</t-option>
           </t-select>
         </div>
       </div>
@@ -149,6 +150,7 @@ import { normalizeMainLocale, setI18nLanguage } from '@/i18n'
 import { useSettingsStore } from '@/stores/settings'
 import { useAuthStore } from '@/stores/auth'
 import { useTheme, type ThemeMode } from '@/composables/useTheme'
+import { themePresetLabel } from '@/config/themePresets'
 import HostApprovalDefaultSetting from './components/HostApprovalDefaultSetting.vue'
 import {
   useFont,
@@ -165,6 +167,9 @@ const { t, locale } = useI18n()
 const settingsStore = useSettingsStore()
 const authStore = useAuthStore()
 const { currentTheme, setTheme } = useTheme()
+
+// 定制主题（朋克）的显示名来自自有配置，不占用上游 6 份 i18n 语言包。
+const punkThemeLabel = computed(() => themePresetLabel('punk', locale.value))
 const {
   currentSans,
   currentMono,
