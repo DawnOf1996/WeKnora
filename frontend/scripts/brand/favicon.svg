@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="知识库助手">
+  <!--
+    站点图标：知识库助手 —— 摊开的书
+    这是所有 favicon 产物的唯一来源，由 frontend/scripts/build-favicon.sh
+    生成 favicon.ico / favicon-16x16.png / favicon-32x32.png / apple-touch-icon.png。
+
+    配色沿用品牌既有语言：
+      #102030  深蓝墨色（底板，与上游字标的墨色一致）
+      #ffc02d  朋克黄主色（与朋克主题 --td-brand-color-6 一致）
+    要换配色只改下面三个色值，然后重跑生成脚本即可。
+    public/ 下的静态资源不会被 vite 注入，颜色是硬编码的，不跟随主题切换。
+  -->
+  <rect width="64" height="64" rx="14" fill="#102030"/>
+
+  <!-- 摊开的书：左右两页，中缝留白 -->
+  <g fill="#ffc02d">
+    <path d="M11 21.5C17.5 19.5 25 20.5 31 24.8V45.5C25 41 17.5 39.5 11 41.5V21.5Z"/>
+    <path d="M53 21.5C46.5 19.5 39 20.5 33 24.8V45.5C39 41 46.5 39.5 53 41.5V21.5Z"/>
+  </g>
+
+  <!-- @favicon:detail start -->
+  <!-- 页面文字线：32px 以上才可辨；16px 会糊成噪点，故生成时剔除 -->
+  <g stroke="#102030" stroke-width="1.8" stroke-linecap="round" opacity="0.4" fill="none">
+    <path d="M16 28C20.5 27 25 27.8 28 30"/>
+    <path d="M16 34C20.5 33 25 33.8 28 36"/>
+    <path d="M48 28C43.5 27 39 27.8 36 30"/>
+    <path d="M48 34C43.5 33 39 33.8 36 36"/>
+  </g>
+  <!-- @favicon:detail end -->
+</svg>
