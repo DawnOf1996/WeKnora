@@ -55,8 +55,9 @@ const terminalHost = ref<HTMLElement | null>(null);
 // 下面的 watch 永远不会触发，终端配色会一直停在首次挂载时的样子。
 const { currentTheme } = useTheme();
 const systemPrefersDark = ref(prefersDarkQuery()?.matches === true);
+// 朋克是深色表面的定制皮肤，终端配色同样走深色。
 const isDarkTheme = computed(() =>
-    currentTheme.value === 'system' ? systemPrefersDark.value : currentTheme.value === 'dark',
+    currentTheme.value === 'system' ? systemPrefersDark.value : currentTheme.value !== 'light',
 );
 
 function prefersDarkQuery(): MediaQueryList | null {

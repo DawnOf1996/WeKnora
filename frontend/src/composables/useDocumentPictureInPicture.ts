@@ -1,4 +1,8 @@
 import { onBeforeUnmount, ref, shallowRef, watch, type Ref } from 'vue'
+// 刻意用相对路径而不是 '@/config/themePresets'：本文件被 node 测试直接 import，
+// 而 `tsx --test` 不解析 @/ 别名（paths 只声明在 tsconfig.app.json，tsx 读的是根
+// tsconfig.json）。改成别名会让 useDocumentPictureInPicture.test.ts 整份加载失败。
+import { THEME_SKIN_ATTR } from '../config/themePresets'
 
 interface DocumentPictureInPicture {
   requestWindow(options: { width: number; height: number }): Promise<Window>
@@ -86,7 +90,8 @@ function copyPreviewStyles(source: Document, destination: Document) {
   }
   const syncTheme = () => {
     for (const [from, to] of [[source.documentElement, destination.documentElement], [source.body, destination.body]]) {
-      for (const name of ['class', 'style', 'lang', 'dir', 'theme-mode', 'tdesign-theme', 'data-theme']) {
+      // 'data-theme-skin' 携带定制皮肤（朋克）；画中画窗口需与主窗口一致。
+      for (const name of ['class', 'style', 'lang', 'dir', 'theme-mode', THEME_SKIN_ATTR, 'tdesign-theme', 'data-theme']) {
         const value = from!.getAttribute(name)
         if (value === null) to!.removeAttribute(name)
         else to!.setAttribute(name, value)
