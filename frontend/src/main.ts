@@ -6,6 +6,9 @@ import TDesign from "tdesign-vue-next";
 // 引入组件库的少量全局样式变量
 import "tdesign-vue-next/dist/tdesign.css";
 import "@/assets/theme/theme.css";
+// 朋克主题皮肤（自包含，不改上游 theme.css）。必须排在 theme.css 之后：
+// 两者选择器特异性同为 (0,3,0)，靠源码顺序决定谁生效。
+import "@/assets/theme/punk-theme.css";
 import "@/assets/theme/tdesign-overrides.less";
 import "@/assets/dropdown-menu.less";
 import "@/components/css/chat-hljs-theme.less";

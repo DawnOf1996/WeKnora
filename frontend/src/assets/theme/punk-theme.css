@@ -1,0 +1,184 @@
+/* ============================================================
+ * 朋克主题皮肤（punk skin）
+ * ------------------------------------------------------------
+ * 设计要点：
+ *  1. 本文件自包含，不修改上游 assets/theme/theme.css。上游升级时
+ *     theme.css 保持零 diff，冲突面归零。
+ *  2. 朋克是「皮肤」而非「表面」：<html> 上 theme-mode 仍是 "dark"，
+ *     另由 data-theme-skin="punk" 承载本皮肤。因此上游那 40 处
+ *     html[theme-mode="dark"] 专属规则（滚动条、Logo 反色、代码高亮、
+ *     暗色弹层、登录页渐变……）全部自动复用，一行都不用改。
+ *  3. 选择器必须写作 :root:root[data-theme-skin="punk"]（特异性 0,3,0），
+ *     与上游 :root:root[theme-mode="dark"]（0,3,0）同级，靠源码顺序取胜。
+ *     写成 :root[data-theme-skin="punk"]（0,2,0）会被深色块压住，皮肤失效。
+ *     main.ts 中本文件的 import 必须位于 theme.css 之后。
+ *  4. 仅覆盖颜色变量。字体、字号、行高、圆角、间距、动效沿用深色主题原值。
+ *
+ * 色阶方向与上游一致：1 最暗 → 10 最亮，-1 用主色的低透明度版本。
+ * 语义色别名（--td-warning-color 等）由上游浅色基准定义，指向色阶固定位：
+ *   warning → -5    error → -6    success → -5    brand → -6
+ * 因此「主色」必须落在对应位号上，交互色（hover/active/disabled）同理：
+ *   warning hover → -4 / active → -6 / focus → -2 / disabled → -3
+ *   error   hover → -5 / active → -7 / focus → -2 / disabled → -3
+ *   success hover → -4 / active → -6 / focus → -2 / disabled → -3
+ *   brand   hover → -5 / active → -7
+ * ============================================================ */
+
+:root:root[data-theme-skin="punk"] {
+    /* ---------------------------------------------------------
+     * 品牌色 —— 荧光粉 + 酸性黄双主色
+     * ---------------------------------------------------------
+     * 朋克美学的核心是「霓虹粉 + 酸黄」对撞。但色阶的深浅端并不等价：
+     * 深色主题下真正生效的品牌槽位是
+     *   -1 → --td-brand-color-light  背景（菜单选中底 / 下拉选中与 hover 底 / tooltip 底）
+     *   -2 → --td-brand-color-light-hover  背景
+     *   -5 → --td-brand-color-hover   主按钮 hover 底 / ghost 按钮 hover 文字
+     *   -6 → --td-brand-color         前景主色（链接、选中项文字、tooltip 文字）
+     *   -7 → --td-brand-color-active  ghost 按钮 active 文字
+     * 其中 -1/-2 是「浅底槽」，是屏幕上成片小色块的来源；若它们与主色同族，
+     * 整屏就只剩一种粉。把浅底槽改走酸黄色系，前景（粉）保持不变，
+     * 即可得到「粉字压琥珀底」的朋克对撞，且只动这一个文件。
+     */
+    --td-brand-color-1: #ffd60a26;
+    --td-brand-color-2: #5a4400;
+    --td-brand-color-3: #7a5c00;
+    --td-brand-color-4: #821640;
+    --td-brand-color-5: #9e1b4c;
+    --td-brand-color-6: #ff2d78;
+    --td-brand-color-7: #ff5c99;
+    --td-brand-color-8: #ff8fb8;
+    --td-brand-color-9: #ffc0d8;
+    --td-brand-color-10: #ffe0ec;
+    --td-brand-color: var(--td-brand-color-6);
+    --td-brand-color-hover: var(--td-brand-color-5);
+    --td-brand-color-active: var(--td-brand-color-7);
+    --td-brand-color-disabled: #7a2344;
+    --td-brand-color-light: var(--td-brand-color-1);
+    --td-brand-color-focus: color-mix(in srgb, var(--td-brand-color) 28%, transparent);
+    --brand-main: var(--td-brand-color-6);
+
+    /* ---------------------------------------------------------
+     * 中性灰阶 —— 偏冷近黑
+     * 深色块中 --td-bg-color-page / container / component / stroke /
+     * border 全部引用灰阶变量，因此覆盖灰阶即可让背景层整体跟随。
+     * --------------------------------------------------------- */
+    --td-gray-color-1: #f2f2f4;
+    --td-gray-color-2: #e6e6ea;
+    --td-gray-color-3: #d6d6dc;
+    --td-gray-color-4: #c2c2ca;
+    --td-gray-color-5: #a8a8b2;
+    --td-gray-color-6: #8e8e98;
+    --td-gray-color-7: #6e6e78;
+    --td-gray-color-8: #55555f;
+    --td-gray-color-9: #4a4a56;
+    --td-gray-color-10: #343440;
+    --td-gray-color-11: #26262f;
+    --td-gray-color-12: #1c1c23;
+    --td-gray-color-13: #141419;
+    --td-gray-color-14: #0b0b0e;
+
+    /* ---------------------------------------------------------
+     * 语义色 —— 酸性黄告警 / 朋克红错误 / 电光绿成功
+     * --------------------------------------------------------- */
+    --td-warning-color-1: #ffd60a1f;
+    --td-warning-color-2: #4a3f0a;
+    --td-warning-color-3: #5e500d;
+    --td-warning-color-4: #7a6811;
+    --td-warning-color-5: #ffd60a;
+    --td-warning-color-6: #ffdf3d;
+    --td-warning-color-7: #ffe770;
+    --td-warning-color-8: #fff0a8;
+    --td-warning-color-9: #fff7cf;
+    --td-warning-color-10: #fffbee;
+
+    --td-error-color-1: #ff2d551f;
+    --td-error-color-2: #4d0c1a;
+    --td-error-color-3: #661023;
+    --td-error-color-4: #80152b;
+    --td-error-color-5: #a01a33;
+    --td-error-color-6: #ff2d55;
+    --td-error-color-7: #ff5f7d;
+    --td-error-color-8: #ff8fa3;
+    --td-error-color-9: #ffc0cb;
+    --td-error-color-10: #ffe1e6;
+
+    --td-success-color-1: #00e58f1f;
+    --td-success-color-2: #053d2b;
+    --td-success-color-3: #075035;
+    --td-success-color-4: #09653f;
+    --td-success-color-5: #00e58f;
+    --td-success-color-6: #2ff0a5;
+    --td-success-color-7: #74f6c3;
+    --td-success-color-8: #b0fbe0;
+    --td-success-color-9: #dcfdef;
+    --td-success-color-10: #effff6;
+
+    /* ---------------------------------------------------------
+     * 背景层硬编码项
+     * 上游深色块里这两项写死为 #181818，不引用灰阶，必须单独覆盖。
+     * --------------------------------------------------------- */
+    --td-bg-color-sidebar: #101014;
+    --td-bg-color-settings-modal: #101014;
+
+    /* ---------------------------------------------------------
+     * 应用级强调色（智能体 / 图谱等语义色）
+     * --------------------------------------------------------- */
+    --app-accent-purple: #c77dff;
+    --app-accent-blue: #4d9fff;
+    --app-accent-teal: #2ce8d6;
+
+    /* 选中行底色：上游是中性的 4% 白，朋克下改为酸性黄叠加，
+       让知识库文档列表、FAQ 条目、文件夹树、设置页签等选中态带黄调。 */
+    --app-selection-bg: color-mix(in srgb, #ffd60a 14%, var(--td-bg-color-container));
+
+    /* ---------------------------------------------------------
+     * 引用原文定位 —— 酸性黄荧光笔
+     * --------------------------------------------------------- */
+    --app-source-highlight: #ffd60a;
+    --app-source-highlight-bg: rgba(255, 214, 10, 0.26);
+    --app-source-highlight-soft-bg: rgba(255, 214, 10, 0.08);
+    --app-source-highlight-border: rgba(255, 214, 10, 0.5);
+}
+
+/* ============================================================
+ * 文本选区
+ * ------------------------------------------------------------
+ * 应用层没有全局 ::selection 规则，文本选区一直是浏览器默认蓝，
+ * 在深色 / 朋克主题下非常刺眼，还会在代码块里压掉深色文字。
+ * 朋克下改为荧光笔式的酸黄底 + 近黑字。
+ * ============================================================ */
+html[data-theme-skin="punk"] ::selection {
+    background: #ffd60a;
+    color: #0b0b0e;
+}
+
+html[data-theme-skin="punk"] ::-moz-selection {
+    background: #ffd60a;
+    color: #0b0b0e;
+}
+
+/* ============================================================
+ * 登录页背景
+ * ------------------------------------------------------------
+ * 上游 Login.vue 的 .login-layout 渐变是硬编码的品牌绿字面值，
+ * 不走 CSS 变量，因此朋克皮肤下必须单独覆盖，否则整页仍是绿的。
+ *
+ * 特异性说明：上游规则为 html[theme-mode="dark"] .login-layout（0,2,1）；
+ * 此处写作 html[theme-mode="dark"][data-theme-skin="punk"] .login-layout（0,3,1），
+ * 以更高特异性取胜 —— Login 路由的 CSS 是懒加载时动态注入的，晚于本文件，
+ * 仅靠源码顺序无法保证覆盖生效。
+ * ============================================================ */
+html[theme-mode="dark"][data-theme-skin="punk"] .login-layout {
+    background: linear-gradient(
+        225deg,
+        #14030d 0%,
+        #26051a 15%,
+        #350722 25%,
+        #46092c 38%,
+        #6b0a3a 50%,
+        #ff2d78 62%,
+        #ff6b1a 74%,
+        #ffd60a 86%,
+        #fff3b0 100%
+    );
+}
