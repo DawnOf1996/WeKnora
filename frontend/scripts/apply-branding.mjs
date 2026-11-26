@@ -231,7 +231,7 @@ const PATCHES = [
       return s
         .replace(
           IMPORT_ANCHOR,
-          `${IMPORT_ANCHOR}import { buildBrandMessages } from './brandMessages.ts'\nimport { BRAND, brandName } from '@/config/branding'\n`,
+          `${IMPORT_ANCHOR}import { buildBrandMessages } from './brandMessages.ts'\nimport { BRAND, brandName } from '../config/branding'\n`,
         )
         .replace(HELPERS_ANCHOR, `${HELPERS_ANCHOR}\n${BRAND_OVERLAY_HELPERS}`)
         .replace(

@@ -4,7 +4,7 @@ import { isEmbedPage } from '../utils/authRefresh.ts'
 import { pluralRules } from './pluralizationRules.ts'
 import { BUILT_IN_DEFAULT, resolveDefaultLocale } from './resolveDefaultLocale.ts'
 import { buildBrandMessages } from './brandMessages.ts'
-import { BRAND, brandName } from '@/config/branding'
+import { BRAND, brandName } from '../config/branding'
 
 export const SUPPORTED_MAIN_LOCALES = [
   'zh-CN',
