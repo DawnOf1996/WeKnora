@@ -8,13 +8,13 @@ set -euo pipefail
 #
 # 用法:
 #   ./scripts/build_private_images.sh                        # 前端镜像，默认 tag
-#   ./scripts/build_private_images.sh --tag v0.9.0-private   # 指定 tag
+#   ./scripts/build_private_images.sh --tag v0.9.1-private   # 指定 tag
 #   ./scripts/build_private_images.sh --frontend              # 仅前端
 #   ./scripts/build_private_images.sh --all                   # 前端 + app + docreader
 #   ./scripts/build_private_images.sh --registry registry.example.com/weknora --push
 #
 # 关键点：
-#   fetch 一定要带 --force。仓库里的 v0.9.0-private 是 annotated tag，
+#   fetch 一定要带 --force。仓库里的私有 tag 是 annotated tag，
 #   本地一旦存在旧版本，普通 `git fetch --tags` 会被 "would clobber existing tag"
 #   拒绝更新，必须 --force 强制刷新，否则会拿旧 commit 打包。
 #
@@ -24,7 +24,7 @@ ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 cd "${ROOT_DIR}"
 
 # ── 默认参数 ──
-GIT_TAG="v0.9.0-private.4"
+GIT_TAG="v0.9.1-private"
 IMAGE_REPO="wechatopenai"
 BUILD_FRONTEND=true
 BUILD_APP=false
@@ -53,14 +53,14 @@ show_help() {
 用法: scripts/build_private_images.sh [选项]
 
 选项:
-  -t, --tag <tag>        要构建的 git tag（默认 v0.9.0-private.4，发新版本时记得改）
+  -t, --tag <tag>        要构建的 git tag（默认 v0.9.1-private，发新版本时记得改）
   -f, --frontend         仅构建前端镜像（默认行为）
   -a, --app              构建 app 镜像
   -d, --docreader        构建 docreader 镜像
       --all              构建全部镜像（前端 + app + docreader）
   -r, --registry <ns>    私有仓库命名空间前缀，如 registry.example.com/weknora
                          不填则使用上游名 wechatopenai/*，docker-compose 无需改动
-  -v, --image-version    镜像 tag（默认取 git tag 名，如 v0.9.0-private）
+  -v, --image-version    镜像 tag（默认取 git tag 名，如 v0.9.1-private）
       --push             构建后推送到私有仓库
       --no-fetch         跳过 git fetch，直接用本地已有的 tag
       --host-build       宿主机构建 vite 产物后再打 runtime 镜像

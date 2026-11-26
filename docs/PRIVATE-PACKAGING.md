@@ -3,7 +3,7 @@
 面向**私有封装版本**（brand / theme 定制层）的服务器端打包作业手册：如何正确拉取自建 tag、
 如何构建前端镜像与后端镜像、如何推送到私有仓库并部署，以及上游升级后品牌定制层的维护流程。
 
-> 适用版本：`v0.9.0-private` 及之后的自建 tag
+> 适用版本：`v0.9.0-private` 及之后的自建 tag（当前版本 `v0.9.1-private`）
 > 仓库地址：<https://github.com/DawnOf1996/WeKnora.git>
 > 一键脚本：`scripts/build_private_images.sh`（见 [§6](#6-一键构建脚本)）
 
@@ -26,7 +26,7 @@ NODE_BIN_DIR=~/nodedist/node-v24.9.0-linux-x64/bin \
 
 ```bash
 git fetch origin --force --tags          # ① 必须带 --force，否则旧 tag 不会被刷新
-git checkout --detach v0.9.0-private     # ② 检出自建 tag
+git checkout --detach v0.9.1-private     # ② 检出自建 tag
 make docker-build-frontend               # ③ 构建前端镜像
 ```
 
@@ -47,7 +47,7 @@ docker build --platform linux/amd64 \
   --build-arg VITE_FRONTEND_COMMIT="$(git rev-parse --short HEAD)" \
   --build-arg NPM_REGISTRY=https://registry.npmmirror.com \
   -f frontend/Dockerfile \
-  -t wechatopenai/weknora-ui:v0.9.0-private \
+  -t wechatopenai/weknora-ui:v0.9.1-private \
   -t wechatopenai/weknora-ui:latest \
   frontend/
 ```
@@ -133,11 +133,11 @@ RUN --mount=type=cache,target=/root/.npm,sharing=locked \
 
 ### 2.1 为什么必须 `--force`
 
-`v0.9.0-private` 是 **annotated tag**（带说明的标签对象）。Git 对已存在的 tag **默认拒绝覆盖**：
+`v0.9.1-private` 是 **annotated tag**（带说明的标签对象）。Git 对已存在的 tag **默认拒绝覆盖**：
 
 ```console
 $ git fetch origin --tags
- ! [rejected]        v0.9.0-private -> v0.9.0-private (would clobber existing tag)
+ ! [rejected]        v0.9.1-private -> v0.9.1-private (would clobber existing tag)
 ```
 
 这条报错不会让命令整体失败（退出码 0），但 **tag 仍停留在旧 commit 上**。后果是
@@ -155,20 +155,20 @@ cd /path/to/WeKnora
 git fetch origin --force --tags --prune
 
 # 确认 tag 存在并指向预期 commit
-git rev-parse v0.9.0-private^{commit}
+git rev-parse v0.9.1-private^{commit}
 ```
 
 ### 2.3 校验 tag 与远端一致
 
 ```bash
 # 本地 tag 的 commit
-git rev-parse v0.9.0-private^{commit}
+git rev-parse v0.9.1-private^{commit}
 
 # 远端 tag 的 commit（权威来源）
-git ls-remote --tags origin | grep 'v0.9.0-private'
+git ls-remote --tags origin | grep 'v0.9.1-private'
 # 输出形如：
-#   5ceb8076...  refs/tags/v0.9.0-private          ← annotated tag 对象
-#   669edcfd9...  refs/tags/v0.9.0-private^{}       ← 实际指向的 commit
+#   5ceb8076...  refs/tags/v0.9.1-private          ← annotated tag 对象
+#   669edcfd9...  refs/tags/v0.9.1-private^{}       ← 实际指向的 commit
 
 # 两者应与 origin/custom/brand 的 head 一致
 git rev-parse origin/custom/brand
@@ -182,7 +182,7 @@ git rev-parse origin/custom/brand
 git clone https://github.com/DawnOf1996/WeKnora.git
 cd WeKnora
 git fetch origin --force --tags          # 克隆默认不拉 tag，必须补这一条
-git checkout --detach v0.9.0-private
+git checkout --detach v0.9.1-private
 ```
 
 > `git clone` **不会**自动拉取 tag。克隆后不补 `git fetch --tags`，`git tag -l` 会是空的。
@@ -204,15 +204,15 @@ git remote set-url origin git@github.com:DawnOf1996/WeKnora.git
 私有 tag 用 **detached HEAD** 检出，构建结果与 tag 严格绑定：
 
 ```bash
-git checkout --detach v0.9.0-private
+git checkout --detach v0.9.1-private
 git log -1 --format='%H %d %s'
-# 669edcfd9... (HEAD, tag: v0.9.0-private, origin/custom/brand)
+# 669edcfd9... (HEAD, tag: v0.9.1-private, origin/custom/brand)
 ```
 
 若需要在 tag 之上继续开发（而不是纯打包），建一个指向它的分支：
 
 ```bash
-git checkout -b private/v0.9.0 v0.9.0-private
+git checkout -b private/v0.9.1 v0.9.1-private
 ```
 
 打包完成后切回主干：
@@ -243,7 +243,7 @@ docker build \
   --build-arg VITE_FRONTEND_COMMIT="$(git rev-parse --short HEAD)" \
   --build-arg NPM_REGISTRY=https://registry.npmmirror.com \
   -f frontend/Dockerfile \
-  -t wechatopenai/weknora-ui:v0.9.0-private \
+  -t wechatopenai/weknora-ui:v0.9.1-private \
   -t wechatopenai/weknora-ui:latest \
   frontend/
 ```
@@ -286,7 +286,7 @@ docker buildx build \
   --build-arg VITE_FRONTEND_COMMIT="$(git rev-parse --short HEAD)" \
   --build-arg NPM_REGISTRY=https://registry.npmmirror.com \
   -f frontend/Dockerfile \
-  -t registry.example.com/weknora/weknora-ui:v0.9.0-private \
+  -t registry.example.com/weknora/weknora-ui:v0.9.1-private \
   --push \
   frontend/
 ```
@@ -305,7 +305,7 @@ docker images wechatopenai/weknora-ui --format '{{.Repository}}:{{.Tag}} {{.Size
 #    host not found in upstream "app"；正式部署由 compose 的网络提供该名字
 #    端口按实际挑一个没被占用的
 docker run -d --name wk-ui-check -p 18099:80 -e APP_HOST=127.0.0.1 \
-  wechatopenai/weknora-ui:v0.9.0-private
+  wechatopenai/weknora-ui:v0.9.1-private
 
 # 3) 首页可访问（应为 200）
 curl -sS -o /dev/null -w "%{http_code}\n" http://127.0.0.1:18099/
@@ -321,7 +321,7 @@ curl -sS http://127.0.0.1:18099/ | grep -oE "<title>[^<]*</title>"
 #    注意：测试会在临时目录里写 fixture 文件并挂进容器，nginx worker 以
 #    非 root 运行。宿主机 umask 必须是 022，否则 fixture 文件是 0600，
 #    nginx 读不到会返回 403。
-(umask 022 && python3 scripts/test_embed_nginx.py wechatopenai/weknora-ui:v0.9.0-private)
+(umask 022 && python3 scripts/test_embed_nginx.py wechatopenai/weknora-ui:v0.9.1-private)
 #   Embed and MCP Nginx integration checks passed
 
 docker rm -f wk-ui-check
@@ -333,7 +333,7 @@ docker rm -f wk-ui-check
 打包后无需额外操作即生效。快速确认镜像里带的是定制版而非上游版：
 
 ```bash
-docker run --rm wechatopenai/weknora-ui:v0.9.0-private \
+docker run --rm wechatopenai/weknora-ui:v0.9.1-private \
   sh -c "grep -o '知识库助手' /usr/share/nginx/html/assets/*.js | head -1"
 ```
 
@@ -346,8 +346,8 @@ docker run --rm wechatopenai/weknora-ui:v0.9.0-private \
 ### 5.1 推送
 
 ```bash
-docker tag wechatopenai/weknora-ui:v0.9.0-private registry.example.com/weknora/weknora-ui:v0.9.0-private
-docker push registry.example.com/weknora/weknora-ui:v0.9.0-private
+docker tag wechatopenai/weknora-ui:v0.9.1-private registry.example.com/weknora/weknora-ui:v0.9.1-private
+docker push registry.example.com/weknora/weknora-ui:v0.9.1-private
 ```
 
 ### 5.2 部署
@@ -358,7 +358,7 @@ docker push registry.example.com/weknora/weknora-ui:v0.9.0-private
 在 `.env` 中指定版本：
 
 ```bash
-WEKNORA_VERSION=v0.9.0-private
+WEKNORA_VERSION=v0.9.1-private
 ```
 
 `docker-compose.yml` 中前端服务是 `image: wechatopenai/weknora-ui:${WEKNORA_VERSION:-latest}`，
@@ -401,11 +401,11 @@ curl -sS -o /dev/null -w "%{http_code}\n" http://<服务器IP>/   # 首页
 `scripts/build_private_images.sh` 把「拉 tag → 检出 → 构建 → 可选推送」串成一步：
 
 ```bash
-# 前端镜像（默认 tag: v0.9.0-private）
+# 前端镜像（默认 tag: v0.9.1-private）
 ./scripts/build_private_images.sh
 
 # 指定 tag
-./scripts/build_private_images.sh --tag v0.9.0-private
+./scripts/build_private_images.sh --tag v0.9.1-private
 
 # 全部镜像 + 推送到私有仓库
 ./scripts/build_private_images.sh --all \
@@ -446,7 +446,7 @@ docker build --platform linux/amd64 \
   --build-arg BUILD_TIME_ARG="$BUILD_TIME" \
   --build-arg GOPROXY_ARG="https://goproxy.cn,direct" \
   -f docker/Dockerfile.app \
-  -t wechatopenai/weknora-app:v0.9.0-private \
+  -t wechatopenai/weknora-app:v0.9.1-private \
   .
 ```
 
@@ -466,7 +466,7 @@ docker build --platform linux/amd64 \
   --build-arg VERSION_ARG="$(cat VERSION)" \
   --build-arg COMMIT_ID_ARG="$(git rev-parse --short HEAD)" \
   -f docker/Dockerfile.docreader \
-  -t wechatopenai/weknora-docreader:v0.9.0-private \
+  -t wechatopenai/weknora-docreader:v0.9.1-private \
   .
 ```
 
@@ -557,13 +557,13 @@ frontend/
 
 | 现象 | 原因 | 处理 |
 | --- | --- | --- |
-| `! [rejected] v0.9.0-private -> v0.9.0-private (would clobber existing tag)` | 本地已有旧 tag | `git fetch origin --force --tags`；脚本已内置 |
+| `! [rejected] v0.9.1-private -> v0.9.1-private (would clobber existing tag)` | 本地已有旧 tag | `git fetch origin --force --tags`；脚本已内置 |
 | 构建卡在 `Pulling fs layer` 很久不动 | docker.io 直连慢 / 加速器在重试 | 先按 [§1](#1-环境要求) 把 builder 基础镜像拉好；中断过的 pull 可复用已下载的层，重新 pull 即可 |
 | `image config verification failed for digest` | 加速器返回了损坏/不一致的镜像 | 换加速器；已下载的层不要信，重新用可用加速器按同一 digest 拉 |
 | `Error response from daemon: ... 404 ... /v2/library/node/manifests/sha256:...` | 加速器不代理按 digest 的请求 | 直连官方源，或先用可用加速器拉同一 digest 再从官方源补 manifest |
 | **容器内 `npm ci` 跑到 290s 后 `ETIMEDOUT`** | npmmirror 的 CDN 域名很慢，每个 tarball 136～225s，还间歇 ECONNRESET | 走宿主机构建路径（`--host-build`），本机 npm 缓存是热的，8s 就能装完；详见 [§1](#1-环境要求) |
 | 宿主机 `npm ci` 报 `EACCES: permission denied, rmdir .../node_modules/...` | 之前用容器在仓库里跑过 `npm ci`，留下 root 属主的 node_modules | 用 root 容器删掉：`docker run --rm -v "$PWD/frontend":/frontend -w /frontend node:24-bookworm-slim rm -rf node_modules` |
-| 打完的镜像功能是旧的 | tag 没刷新，检出的是旧 commit | `git rev-parse v0.9.0-private^{commit}` 与 `git ls-remote --tags origin` 对比 |
+| 打完的镜像功能是旧的 | tag 没刷新，检出的是旧 commit | `git rev-parse v0.9.1-private^{commit}` 与 `git ls-remote --tags origin` 对比 |
 | `git tag -l` 为空 | `git clone` 默认不拉 tag | `git fetch origin --tags` |
 | `npm ci` 卡住 / 超时 | npm 源慢 | 加 `--build-arg NPM_REGISTRY=https://registry.npmmirror.com` |
 | `npm ci` 报 `xlsx` 下载失败 | `cdn.sheetjs.com` 不可达 | 确认出口网络；`package-lock.json` 锁定了该远程 tarball 及其哈希，不能换源 |
@@ -584,7 +584,7 @@ frontend/
 打包前：
 
 - [ ] `git status --porcelain` 为空
-- [ ] `git rev-parse v0.9.0-private^{commit}` 与远端一致
+- [ ] `git rev-parse v0.9.1-private^{commit}` 与远端一致
 - [ ] Docker 服务在跑，磁盘/内存充足
 - [ ] npm 源与 `cdn.sheetjs.com` 可达
 
@@ -647,7 +647,7 @@ cp -r dist "$STAGE/"
 cp nginx.conf nginx-api-proxy.conf nginx-http.conf docker-entrypoint.sh "$STAGE/"
 chmod -R a+rX "$STAGE"          # cp 会按当前 umask 重建权限，这里再放开一次
 
-docker build -f- -t wechatopenai/weknora-ui:v0.9.0-private "$STAGE" <<'EOF'
+docker build -f- -t wechatopenai/weknora-ui:v0.9.1-private "$STAGE" <<'EOF'
 FROM nginx:1.30.3-alpine@sha256:0d3b80406a13a767339fbe2f41406d6c7da727ab89cf8fae399e81f780f814d1
 COPY dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/templates/default.conf.template
@@ -721,6 +721,51 @@ rm -rf "$STAGE"
 > **镜像 tag 与源码 tag 要一一对应。** 改了 `.2` 的源码却把镜像仍打成 `.2`，
 > 部署时会出现「镜像比 tag 新」的情况，后续排查会很痛苦。
 > 加了新内容就新开一个 tag + 同名镜像，别覆盖旧 tag。
+
+### B.2.2 `v0.9.1-private`（基于 upstream `v0.9.1` = `71c32af9`）
+
+相对 `.4` 是**整条私有层重新落到新上游基线**，不是增量改动。
+
+| 项目 | 结果 |
+| --- | --- |
+| 上游基线 | `v0.9.1` → `71c32af9`（自旧基线 `cbdcebabf` 起 174 个上游 commit） |
+| 私有层 | 30 个提交，35 个文件，+3599 / −78 行 |
+| rebase | 28 个私有提交全部重放成功，2 处冲突（见下） |
+| 品牌漂移检测 | `npm run check-branding` → 通过（上游集成项 `im, embed, api, mcpserver, cli, chrome, claw`；已隐藏 `im, cli, chrome, claw`） |
+| 集成点整改 | `npm run branding:apply -- --dry` → **20/20 已就位**；从纯净上游 replay 可逐字节复现已提交结果 |
+| 文案对账 | `npm run branding:merge` → 6 语言全部 **0 新增 / 0 失效**；zh-CN 93/43/50，与 `.4` 基线一致 |
+| `npm test` | **2923 项 / 通过 2919 / 失败 3 / 跳过 1** —— 3 项失败均为上游自带（见下） |
+| `npm run type-check` | exit 0 |
+| `npm run build` | exit 0 |
+| `npm run check-i18n` | 17/17 通过 |
+| 站点图标 | 沿用 `.4` 的书本图标（`favicon.ico` 原位替换，未随本次升级改动） |
+| 镜像 | ⏳ **待在服务器构建**（构建机无 docker；源码侧门禁已全绿） |
+
+**2 处冲突的要点**（详见 `版本升级操作手册.md` §4.2.1）：
+
+1. `frontend/src/i18n/index.ts` —— 上游把 i18n 从静态导入改成懒加载（`LOCALE_LOADERS` +
+   `setLocaleMessage`），覆盖层的挂载点消失。改为接在 `setLocaleMessage()` 上，
+   并同步更新 `apply-branding.mjs` 的锚点。
+2. `frontend/src/components/css/chat-hljs-dark.less` —— 上游删除该文件，
+   改用 CSS 变量（`chat-hljs-theme.less` + `html[theme-mode='dark']`）从根上根治了
+   我们当年修的同一个缺陷（issue #5300）。**接受上游删除，私有补丁与其测试一并作废**。
+
+**3 项测试失败（均为上游自带，与私有层无关）**：
+
+| 失败用例 | 性质 |
+| --- | --- |
+| `PPTX preview bundles the ESM renderer with one shared Vue runtime` | 上游自带 |
+| `interactive bash defines Debian-style ls aliases` | 上游自带（依赖 POSIX shell，Windows 环境） |
+| `copyable host arguments remain literal in a POSIX shell` | 上游自带（依赖 POSIX shell，Windows 环境） |
+
+> **构建机执行**：
+> ```bash
+> git fetch origin --force --tags --prune
+> git checkout --detach v0.9.1-private
+> NODE_BIN_DIR=~/nodedist/node-v24.9.0-linux-x64/bin \
+>     ./scripts/build_private_images.sh --host-build
+> ```
+> 脚本默认 tag 已同步为 `v0.9.1-private`。
 
 ### B.3 该机特有的坑（已在正文与故障排查表中标注）
 
