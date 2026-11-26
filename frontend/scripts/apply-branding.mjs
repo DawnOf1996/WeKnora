@@ -24,6 +24,49 @@ const dryRun = process.argv.includes('--dry') || process.argv.includes('--dry-ru
  *   detect 判定「是否已经在位」
  *   apply  返回整改后的源码；返回与入参相同表示锚点已丢失，需人工处理
  */
+
+// ── i18n 覆盖层的合并函数（独立于 PATCHES，供 i18n-brand-merge 注入）──
+// 上游 v0.9.1 起 i18n 改为懒加载架构：locale 由 LOCALE_LOADERS 按需 import，
+// 再在 loadLocaleMessages() 里写进 i18n。覆盖层因此接在「消息写入 i18n」的
+// 那一刻（setLocaleMessage），而不是构建静态 messages 对象 —— 后者已随上游
+// 重构消失。函数体本身与上游无交集，任何版本都可原样注入。
+const BRAND_OVERLAY_HELPERS = `/**
+ * 品牌覆盖层合并：按点分路径深合并，brandMessages 的条目覆盖上游 locale。
+ *
+ * 上游 locales/*.ts 保持原样 —— 上游每次发版都会改这些文件，在里面改字符串
+ * 等于制造冲突点。本文件（独立新增）与 brandMessages.ts（独立新增）都不与
+ * 上游重叠，升级时零冲突。
+ */
+function mergeBrandMessages<T extends Record<string, unknown>>(
+  base: T,
+  patch: Record<string, string>,
+): T {
+  const out: Record<string, unknown> = { ...base }
+  for (const [path, value] of Object.entries(patch)) {
+    const segments = path.split('.')
+    let cursor = out
+    for (let i = 0; i < segments.length - 1; i += 1) {
+      const seg = segments[i]!
+      const next = cursor[seg]
+      if (typeof next !== 'object' || next === null || Array.isArray(next)) {
+        cursor[seg] = {}
+      }
+      cursor = cursor[seg] as Record<string, unknown>
+    }
+    const leaf = segments[segments.length - 1]!
+    cursor[leaf] = value
+  }
+  return out as T
+}
+
+function withBrand<T extends Record<string, unknown>>(base: T, locale: string): T {
+  return mergeBrandMessages(
+    base,
+    buildBrandMessages(locale, brandName(locale), BRAND.assistantName),
+  )
+}
+`
+
 const PATCHES = [
   // ── 设置导航：隐藏 section 与集成 tab ────────────────────────────────
   {
@@ -166,59 +209,44 @@ const PATCHES = [
   },
 
   // ── i18n 品牌覆盖层接入 ──────────────────────────────────────────────
+  // 上游 v0.9.1 起 i18n 改成懒加载架构：locale 通过 LOCALE_LOADERS 按需
+  // import，再在 loadLocaleMessages() 里 setLocaleMessage 写进 i18n。
+  // 覆盖层因此接在「消息写入 i18n」的那一刻，而不是构建静态 messages 对象。
   {
     id: 'i18n-brand-merge',
     file: 'src/i18n/index.ts',
-    detect: (s) => s.includes("from './brandMessages.ts'") && s.includes('withBrand(zhCN'),
-    apply: (s) => s
-      .replace(
-        "import { pluralRules } from './pluralizationRules.ts'\n",
-        "import { pluralRules } from './pluralizationRules.ts'\nimport { buildBrandMessages } from './brandMessages.ts'\nimport { BRAND, brandName } from '@/config/branding'\n",
-      )
-      .replace(
-        "const messages = {\n  'zh-CN': zhCN,\n  'zh-TW': zhTW,\n  'en-US': enUS,\n  'ru-RU': ruRU,\n  'ko-KR': koKR,\n  'ja-JP': jaJP\n}",
-        `/**
- * 品牌覆盖层合并：按点分路径深合并，brandMessages 的条目覆盖上游 locale。
- * 上游 locales/*.ts 保持原样 —— 上游每次发版都会改这些文件。
- */
-function mergeBrandMessages<T extends Record<string, unknown>>(
-  base: T,
-  patch: Record<string, string>,
-): T {
-  const out: Record<string, unknown> = { ...base }
-  for (const [path, value] of Object.entries(patch)) {
-    const segments = path.split('.')
-    let cursor = out
-    for (let i = 0; i < segments.length - 1; i += 1) {
-      const seg = segments[i]!
-      const next = cursor[seg]
-      if (typeof next !== 'object' || next === null || Array.isArray(next)) {
-        cursor[seg] = {}
+    detect: (s) => s.includes("from './brandMessages.ts'") && s.includes('withBrand(bundle, target)'),
+    apply: (s) => {
+      const IMPORT_ANCHOR = "import { BUILT_IN_DEFAULT, resolveDefaultLocale } from './resolveDefaultLocale.ts'\n"
+      const HELPERS_ANCHOR = "  'ja-JP': () => import('./locales/ja-JP.ts'),\n}\n"
+      const TARGET_ANCHOR = 'i18n.global.setLocaleMessage(target, bundle as never)'
+      const SEED_CURRENT_ANCHOR = 'i18n.global.setLocaleMessage(locale, mergePlainRecords(seed, current) as never)'
+      const SEED_ANCHOR = 'i18n.global.setLocaleMessage(locale, seed as never)'
+
+      // 任一锚点丢失就整体放弃 —— 绝不允许只改一半。
+      for (const anchor of [IMPORT_ANCHOR, HELPERS_ANCHOR, TARGET_ANCHOR, SEED_CURRENT_ANCHOR, SEED_ANCHOR]) {
+        if (!s.includes(anchor)) return s
       }
-      cursor = cursor[seg] as Record<string, unknown>
-    }
-    const leaf = segments[segments.length - 1]!
-    cursor[leaf] = value
-  }
-  return out as T
-}
 
-function withBrand<T extends Record<string, unknown>>(base: T, locale: string): T {
-  return mergeBrandMessages(
-    base,
-    buildBrandMessages(locale, brandName(locale), BRAND.assistantName),
-  )
-}
-
-const messages = {
-  'zh-CN': withBrand(zhCN, 'zh-CN'),
-  'zh-TW': withBrand(zhTW, 'zh-TW'),
-  'en-US': withBrand(enUS, 'en-US'),
-  'ru-RU': withBrand(ruRU, 'ru-RU'),
-  'ko-KR': withBrand(koKR, 'ko-KR'),
-  'ja-JP': withBrand(jaJP, 'ja-JP')
-}`,
-      ),
+      return s
+        .replace(
+          IMPORT_ANCHOR,
+          `${IMPORT_ANCHOR}import { buildBrandMessages } from './brandMessages.ts'\nimport { BRAND, brandName } from '@/config/branding'\n`,
+        )
+        .replace(HELPERS_ANCHOR, `${HELPERS_ANCHOR}\n${BRAND_OVERLAY_HELPERS}`)
+        .replace(
+          TARGET_ANCHOR,
+          'i18n.global.setLocaleMessage(target, withBrand(bundle, target) as never)',
+        )
+        .replace(
+          SEED_CURRENT_ANCHOR,
+          'i18n.global.setLocaleMessage(locale, withBrand(mergePlainRecords(seed, current), locale) as never)',
+        )
+        .replace(
+          SEED_ANCHOR,
+          'i18n.global.setLocaleMessage(locale, withBrand(seed, locale) as never)',
+        )
+    },
   },
 
   // ── 沙箱模板显示名 ────────────────────────────────────────────────────
