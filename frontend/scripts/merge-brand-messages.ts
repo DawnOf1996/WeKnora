@@ -23,27 +23,31 @@
  *
  * 退出码：0 = 无新增、无失效；1 = 有需要人工处理的项目。
  */
-import { readFileSync } from 'node:fs'
-import { dirname, join } from 'node:path'
-import { fileURLToPath } from 'node:url'
-
 import { BRAND_TEXT_KEYS, BRAND_TEXT_EXCLUDED, BRAND_TEXT_TEMPLATES } from '../src/i18n/brandMessages.ts'
 
-const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const locales = Object.keys(BRAND_TEXT_TEMPLATES)
 const only = process.argv.find((a) => a.startsWith('--locale='))?.split('=')[1]
 const targets = only ? locales.filter((l) => l === only) : locales
 
 type LocaleTree = Record<string, unknown>
 
-function loadLocale(locale: string): LocaleTree {
-  const file = join(root, 'src/i18n/locales', `${locale}.ts`)
-  const src = readFileSync(file, 'utf8')
-  const body = src.replace(/^\s*export\s+default\s+/, '').replace(/;\s*$/, '')
+/**
+ * 载入语言包树。
+ *
+ * 上游 v0.9.1 起 locale 不再是单个字面量文件：入口 `locales/<locale>.ts` 只做
+ * import + 展开，9 个领域模块放在 `locales/<locale>/<domain>.ts`。用
+ * `new Function` 求值入口会因为里面是 import 语句而直接失败
+ * （Cannot use import statement outside a module）。
+ *
+ * 改为真正 import 入口文件、取它 default 导出的合并结果 —— 与运行时拿到的是
+ * 同一棵树，而且上游以后再拆分/合并都不用再改这个脚本。
+ */
+async function loadLocale(locale: string): Promise<LocaleTree> {
   try {
-    return new Function(`return (${body})`)() as LocaleTree
+    const mod = await import(`../src/i18n/locales/${locale}.ts`)
+    return mod.default as LocaleTree
   } catch (e) {
-    console.error(`解析 ${locale}.ts 失败：${(e as Error).message}`)
+    console.error(`加载 ${locale}.ts 失败：${(e as Error).message}`)
     process.exit(2)
   }
 }
@@ -102,7 +106,7 @@ if (unregistered.length || ghosts.length) {
 }
 
 for (const locale of targets) {
-  const tree = loadLocale(locale)
+  const tree = await loadLocale(locale)
   const upstreamBrandText = collectBrandText(tree)
   // 覆盖层按语言可选：只看该语言真正写了模板的那几条
   const covered = new Set<string>(Object.keys(BRAND_TEXT_TEMPLATES[locale] || {}))

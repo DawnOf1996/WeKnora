@@ -53,18 +53,45 @@ for (const t of list) {
   resolved.push({ name: t, path: p })
 }
 
-let total = 0
-for (const { name, path } of resolved) {
-  const src = readFileSync(path, 'utf8')
+/**
+ * 求值一个「export default <字面量>」的模块。
+ */
+function evalLiteral(src, label) {
   const body = src.replace(/^\s*export\s+default\s+/, '').replace(/;\s*$/, '')
-
-  let obj
   try {
-    obj = new Function(`return (${body})`)()
+    return new Function(`return (${body})`)()
   } catch (e) {
-    console.error(`解析失败 (${name}): ${e.message}`)
+    console.error(`解析失败 (${label}): ${e.message}`)
     process.exit(1)
   }
+}
+
+/**
+ * 载入语言包树。
+ *
+ * 上游 v0.9.1 起 locale 不再是单个字面量文件：入口 locales/<locale>.ts 只做
+ * import + 展开，9 个领域模块放在 locales/<locale>/<domain>.ts。这里按入口
+ * 文件里声明的 import 顺序逐个求值再合并 —— 与上游 export default {...a, ...b}
+ * 的语义一致。旧结构（入口本身就是字面量对象）依然支持。
+ *
+ * 这个脚本用原生 node 跑（.mjs），不能 import .ts，所以走「读源码 + 求值」
+ * 而不是真实 import。
+ */
+function loadLocaleTree(filePath, label) {
+  const src = readFileSync(filePath, 'utf8')
+  const domainImports = [...src.matchAll(/^import\s+\w+\s+from\s+['"](\.[^'"]+\.ts)['"]/gm)].map((m) => m[1])
+  if (!domainImports.length) return evalLiteral(src, label)
+  const dir = dirname(filePath)
+  let merged = {}
+  for (const rel of domainImports) {
+    merged = { ...merged, ...evalLiteral(readFileSync(resolve(dir, rel), 'utf8'), rel) }
+  }
+  return merged
+}
+
+let total = 0
+for (const { name, path } of resolved) {
+  const obj = loadLocaleTree(path, name)
 
   const rows = []
   const walk = (node, pathParts) => {
